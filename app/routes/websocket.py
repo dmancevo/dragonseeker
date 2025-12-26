@@ -24,48 +24,60 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, player_id: str)
         5. Keep connection alive with ping/pong
         6. Remove connection on disconnect
     """
+    print(f"🔌 WebSocket connection attempt: game={game_id}, player={player_id}")
+
     game = game_manager.get_game(game_id)
 
     # Validate game exists and player is in game
     if not game:
+        print(f"❌ Game not found: {game_id}")
         await websocket.close(code=4004, reason="Game not found")
         return
 
     if player_id not in game.players:
+        print(f"❌ Player not in game: {player_id}")
         await websocket.close(code=4004, reason="Player not in game")
         return
 
     # Accept connection
     await websocket.accept()
+    print(f"✅ WebSocket connected: {player_id} in game {game_id}")
 
     # Register WebSocket connection
     game.connections[player_id] = websocket
+    print(f"📊 Active connections in game {game_id}: {len(game.connections)}")
 
     try:
         # Send initial state to player
         initial_state = game.get_state_for_player(player_id)
-        await websocket.send_text(json.dumps({
+        message = json.dumps({
             "type": "state_update",
             "data": initial_state
-        }))
+        })
+        await websocket.send_text(message)
+        print(f"📤 Sent initial state to {player_id}")
 
         # Keep connection alive and handle messages
         while True:
             try:
                 # Receive messages (mainly for keep-alive pings)
                 data = await websocket.receive_text()
+                print(f"📥 Received from {player_id}: {data}")
 
                 # Handle ping/pong
                 if data == "ping":
                     await websocket.send_text("pong")
 
             except WebSocketDisconnect:
+                print(f"🔌 WebSocket disconnected: {player_id}")
                 break
 
     except Exception as e:
-        print(f"WebSocket error for player {player_id}: {e}")
+        print(f"❌ WebSocket error for player {player_id}: {e}")
 
     finally:
         # Remove connection when disconnected
         if player_id in game.connections:
             del game.connections[player_id]
+            print(f"🗑️ Removed connection for {player_id}")
+            print(f"📊 Remaining connections: {len(game.connections)}")

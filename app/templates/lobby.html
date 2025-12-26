@@ -3,7 +3,7 @@
 {% block title %}Game Lobby - Villagers, Knights & Dragon{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto" hx-ext="ws" ws-connect="/ws/{{ game.game_id }}/{{ player_id }}">
+<div class="max-w-4xl mx-auto">
     <!-- Share Link Card -->
     <div class="alert alert-info mb-6">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
@@ -73,7 +73,6 @@
             <div class="card-actions justify-end mt-4">
                 <button
                     hx-post="/api/games/{{ game.game_id }}/start?player_id={{ player_id }}"
-                    hx-swap="none"
                     class="btn btn-success btn-lg btn-block"
                     {% if game.players|length < min_players %}disabled{% endif %}>
                     Start Game
@@ -92,6 +91,15 @@
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Lobby page loaded');
+    console.log('Game ID: {{ game.game_id }}');
+    console.log('Player ID: {{ player_id }}');
+
+    // Initialize native WebSocket connection
+    initGameWebSocket('{{ game.game_id }}', '{{ player_id }}');
+});
+
 function copyShareLink() {
     const input = document.getElementById('share-link');
     input.select();
@@ -107,27 +115,6 @@ function copyShareLink() {
         btn.classList.remove('btn-success');
     }, 2000);
 }
-
-// Listen for WebSocket state updates
-document.body.addEventListener('htmx:wsMessage', function(event) {
-    const data = JSON.parse(event.detail.message);
-
-    if (data.type === 'state_update') {
-        // Update player count
-        const playerCount = document.getElementById('player-count');
-        if (playerCount) {
-            playerCount.textContent = data.data.player_count;
-        }
-
-        // Refresh player list
-        updatePlayerList(data.data.players);
-
-        // If game started, redirect to play page
-        if (data.data.state === 'playing') {
-            window.location.href = '/game/{{ game.game_id }}/play?player_id={{ player_id }}';
-        }
-    }
-});
 
 function updatePlayerList(players) {
     const listContainer = document.getElementById('player-list');

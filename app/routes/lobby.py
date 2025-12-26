@@ -1,5 +1,5 @@
 """Routes for lobby management."""
-from fastapi import APIRouter, HTTPException, Request, Query
+from fastapi import APIRouter, HTTPException, Request, Query, Response
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -51,7 +51,7 @@ async def show_lobby(request: Request, game_id: str, player_id: str = Query(...)
 
 
 @router.post("/api/games/{game_id}/start")
-async def start_game(game_id: str, player_id: str = Query(...)):
+async def start_game(game_id: str, player_id: str = Query(...), response: Response = None):
     """Start the game (assign roles and transition to playing).
 
     Only callable by the host.
@@ -59,9 +59,10 @@ async def start_game(game_id: str, player_id: str = Query(...)):
     Args:
         game_id: The game session ID
         player_id: The player's ID (must be host)
+        response: FastAPI response object
 
     Returns:
-        Success message
+        Success message with redirect header
 
     Raises:
         HTTPException: If validation fails
@@ -85,5 +86,8 @@ async def start_game(game_id: str, player_id: str = Query(...)):
 
     # Broadcast state update to all players
     await game.broadcast_state()
+
+    # Redirect to game page
+    response.headers["HX-Redirect"] = f"/game/{game_id}/play?player_id={player_id}"
 
     return {"status": "started", "game_id": game_id}

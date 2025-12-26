@@ -1,12 +1,12 @@
 """Routes for active gameplay (voting, guessing, etc.)."""
-from fastapi import APIRouter, HTTPException, Request, Query
+from fastapi import APIRouter, HTTPException, Request, Query, Response, Form
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from core.game_manager import game_manager
 from core.game_session import GameState
 from core.roles import Role
-from models.requests import VoteRequest, GuessWordRequest
+from models.requests import VoteRequest
 from services.voting import can_vote, all_votes_submitted
 from services.game_state import can_start_voting, transition_to_voting, transition_to_playing, transition_to_finished
 from services.win_conditions import determine_winner, check_dragon_eliminated
@@ -97,7 +97,7 @@ async def start_voting(game_id: str, player_id: str = Query(...)):
 
 
 @router.post("/api/games/{game_id}/vote")
-async def submit_vote(game_id: str, vote: VoteRequest, player_id: str = Query(...)):
+async def submit_vote(game_id: str, vote: VoteRequest, player_id: str = Query(...), response: Response = None):
     """Submit a vote for player elimination.
 
     Args:
@@ -140,6 +140,8 @@ async def submit_vote(game_id: str, vote: VoteRequest, player_id: str = Query(..
             game.state = GameState.DRAGON_GUESS
         elif winner:
             transition_to_finished(game, winner)
+            # Redirect to results page when game is finished
+            response.headers["HX-Redirect"] = f"/game/{game_id}/results?player_id={player_id}"
         else:
             # Continue playing
             transition_to_playing(game)
@@ -166,13 +168,14 @@ async def submit_vote(game_id: str, vote: VoteRequest, player_id: str = Query(..
 
 
 @router.post("/api/games/{game_id}/guess-word")
-async def guess_word(game_id: str, guess: GuessWordRequest, player_id: str = Query(...)):
+async def guess_word(game_id: str, guess: str = Form(...), player_id: str = Query(...), response: Response = None):
     """Dragon attempts to guess the secret word after elimination.
 
     Args:
         game_id: The game session ID
-        guess: The word guess
+        guess: The word guess from form data
         player_id: The player's ID (must be dragon)
+        response: FastAPI response object
 
     Returns:
         Guess result and winner
@@ -193,17 +196,21 @@ async def guess_word(game_id: str, guess: GuessWordRequest, player_id: str = Que
     if game.state != GameState.DRAGON_GUESS:
         raise HTTPException(status_code=400, detail="Not in dragon guess phase")
 
-    # Check if guess is correct
-    correct = guess.guess == game.word.lower()
+    # Clean and check if guess is correct
+    guess = guess.strip().lower()
+    correct = guess == game.word.lower()
 
     # Set winner
     winner = "dragon" if correct else "villagers"
-    game.dragon_guess = guess.guess
+    game.dragon_guess = guess
 
     transition_to_finished(game, winner)
 
     # Broadcast final state
     await game.broadcast_state()
+
+    # Redirect to results page
+    response.headers["HX-Redirect"] = f"/game/{game_id}/results?player_id={player_id}"
 
     return {
         "correct": correct,

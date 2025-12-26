@@ -229,22 +229,29 @@ class GameSession:
 
     async def broadcast_state(self) -> None:
         """Broadcast current game state to all connected players."""
+        print(f"📢 Broadcasting state for game {self.game_id} to {len(self.connections)} connections")
+        print(f"   Game state: {self.state.value}")
+
         disconnected = []
 
         for player_id, websocket in self.connections.items():
             try:
                 state = self.get_state_for_player(player_id)
-                await websocket.send_text(json.dumps({
+                message = json.dumps({
                     "type": "state_update",
                     "data": state
-                }))
-            except Exception:
+                })
+                await websocket.send_text(message)
+                print(f"   ✅ Sent to {player_id}")
+            except Exception as e:
+                print(f"   ❌ Failed to send to {player_id}: {e}")
                 # Mark for removal if send fails
                 disconnected.append(player_id)
 
         # Remove disconnected players
         for player_id in disconnected:
             del self.connections[player_id]
+            print(f"   🗑️ Removed disconnected player: {player_id}")
 
     def __repr__(self) -> str:
         return f"GameSession(id={self.game_id}, state={self.state}, players={len(self.players)})"

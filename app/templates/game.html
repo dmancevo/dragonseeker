@@ -3,7 +3,7 @@
 {% block title %}Playing - Villagers, Knights & Dragon{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto" hx-ext="ws" ws-connect="/ws/{{ game.game_id }}/{{ player_id }}">
+<div class="max-w-6xl mx-auto">
     <!-- Game Status Bar -->
     <div class="alert mb-6" id="game-status">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
@@ -84,7 +84,6 @@
                     <h3 class="card-title text-lg">Host Controls</h3>
                     <button
                         hx-post="/api/games/{{ game.game_id }}/start-voting?player_id={{ player_id }}"
-                        hx-swap="none"
                         class="btn btn-warning btn-block">
                         Start Voting Round
                     </button>
@@ -137,7 +136,6 @@
                         <button
                             hx-post="/api/games/{{ game.game_id }}/vote?player_id={{ player_id }}"
                             hx-vals='{"target_id": "{{ p.id }}"}'
-                            hx-swap="none"
                             class="btn btn-outline btn-error btn-block justify-start">
                             <span class="avatar placeholder">
                                 <div class="bg-primary text-primary-content rounded-full w-8">
@@ -163,7 +161,7 @@
                     <h2 class="card-title text-error">Final Chance!</h2>
                     <p class="text-sm mb-4">You've been eliminated. Guess the secret word to win!</p>
 
-                    <form hx-post="/api/games/{{ game.game_id }}/guess-word?player_id={{ player_id }}" hx-swap="none">
+                    <form hx-post="/api/games/{{ game.game_id }}/guess-word?player_id={{ player_id }}">
                         <div class="form-control">
                             <input
                                 type="text"
@@ -186,44 +184,13 @@
 </div>
 
 <script>
-// WebSocket state update handler
-document.body.addEventListener('htmx:wsMessage', function(event) {
-    const data = JSON.parse(event.detail.message);
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Game page loaded');
+    console.log('Game ID: {{ game.game_id }}');
+    console.log('Player ID: {{ player_id }}');
 
-    if (data.type === 'state_update') {
-        const state = data.data;
-
-        // Update status bar
-        updateStatusBar(state.state);
-
-        // Update players grid
-        updatePlayersGrid(state.players);
-
-        // Update alive count
-        const aliveCount = document.getElementById('alive-count');
-        if (aliveCount) {
-            aliveCount.textContent = state.alive_count + ' alive';
-        }
-
-        // Show/hide voting area
-        const votingArea = document.getElementById('voting-area');
-        if (votingArea) {
-            votingArea.style.display = state.state === 'voting' ? 'block' : 'none';
-        }
-
-        // If vote submitted
-        if (state.has_voted) {
-            const voteButtons = document.getElementById('vote-buttons');
-            const voteStatus = document.getElementById('vote-status');
-            if (voteButtons) voteButtons.style.display = 'none';
-            if (voteStatus) voteStatus.style.display = 'block';
-        }
-
-        // Redirect to results if finished
-        if (state.state === 'finished') {
-            window.location.href = '/game/{{ game.game_id }}/results?player_id={{ player_id }}';
-        }
-    }
+    // Initialize native WebSocket connection
+    initGameWebSocket('{{ game.game_id }}', '{{ player_id }}');
 });
 
 function updateStatusBar(state) {

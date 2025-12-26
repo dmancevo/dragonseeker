@@ -4,11 +4,15 @@
 
 // Configure HTMX
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('HTMX config loading...');
+
     // Set default timeout for requests
     htmx.config.timeout = 10000; // 10 seconds
 
     // Configure WebSocket reconnection
     htmx.config.wsReconnectDelay = 'full-jitter';
+
+    console.log('HTMX configured successfully');
 });
 
 // Global HTMX event handlers
@@ -39,10 +43,22 @@ document.body.addEventListener('htmx:beforeSwap', function(event) {
     }
 });
 
+document.body.addEventListener('htmx:beforeRequest', function(event) {
+    console.log('HTMX request starting:', event.detail.pathInfo.requestPath);
+});
+
 document.body.addEventListener('htmx:afterRequest', function(event) {
+    console.log('HTMX request complete:', {
+        path: event.detail.pathInfo.requestPath,
+        status: event.detail.xhr.status,
+        headers: {
+            'HX-Redirect': event.detail.xhr.getResponseHeader('HX-Redirect')
+        }
+    });
+
     // Log successful requests in development
     if (event.detail.successful) {
-        console.log('Request successful:', event.detail.pathInfo.requestPath);
+        console.log('Request successful');
     }
 });
 

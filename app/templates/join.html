@@ -7,9 +7,9 @@
     <div class="card w-full max-w-md bg-base-100 shadow-xl">
         <div class="card-body">
             <h2 class="card-title text-2xl justify-center mb-4">Join Game</h2>
-            <p class="text-center text-base-content/70 mb-6">Enter your nickname to join the game</p>
+            <p class="text-center text-base-content/70 mb-6">Enter your nickname to continue</p>
 
-            <form hx-post="/api/games/{{ game_id }}/join" hx-swap="none">
+            <form hx-post="/api/games/{{ game_id }}/join">
                 <div class="form-control">
                     <label class="label">
                         <span class="label-text">Nickname</span>

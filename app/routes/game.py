@@ -1,5 +1,5 @@
 """Routes for game creation and joining."""
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response, Form
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -11,7 +11,7 @@ templates = Jinja2Templates(directory="templates")
 
 
 @router.post("/api/games/create")
-async def create_game():
+async def create_game(response: Response):
     """Create a new game session.
 
     Returns:
@@ -19,10 +19,10 @@ async def create_game():
     """
     game = game_manager.create_game()
 
-    return RedirectResponse(
-        url=f"/game/{game.game_id}/join",
-        status_code=303
-    )
+    # Use HTMX's HX-Redirect header for client-side redirect
+    response.headers["HX-Redirect"] = f"/game/{game.game_id}/join"
+
+    return {"status": "created", "game_id": game.game_id}
 
 
 @router.get("/game/{game_id}/join")
@@ -54,15 +54,16 @@ async def show_join_page(request: Request, game_id: str):
 
 
 @router.post("/api/games/{game_id}/join")
-async def join_game(game_id: str, join_request: JoinGameRequest):
+async def join_game(game_id: str, nickname: str = Form(...), response: Response = None):
     """Add a player to the game session.
 
     Args:
         game_id: The game session ID
-        join_request: Player's nickname
+        nickname: Player's nickname from form data
+        response: FastAPI response object
 
     Returns:
-        Redirect to lobby page with player_id
+        Success message with redirect header
 
     Raises:
         HTTPException: If game not found or cannot join
@@ -75,18 +76,23 @@ async def join_game(game_id: str, join_request: JoinGameRequest):
     if game.state.value != "lobby":
         raise HTTPException(status_code=400, detail="Game has already started")
 
+    # Validate nickname
+    nickname = nickname.strip()
+    if not nickname or len(nickname) > 20:
+        raise HTTPException(status_code=400, detail="Invalid nickname")
+
     # Check for duplicate nicknames
-    if any(p.nickname.lower() == join_request.nickname.lower()
+    if any(p.nickname.lower() == nickname.lower()
            for p in game.players.values()):
         raise HTTPException(status_code=400, detail="Nickname already taken")
 
     # Add player
-    player = game.add_player(join_request.nickname)
+    player = game.add_player(nickname)
 
     # Broadcast update to all connected players
     await game.broadcast_state()
 
-    return RedirectResponse(
-        url=f"/game/{game_id}/lobby?player_id={player.id}",
-        status_code=303
-    )
+    # Use HTMX's HX-Redirect header for client-side redirect
+    response.headers["HX-Redirect"] = f"/game/{game_id}/lobby?player_id={player.id}"
+
+    return {"status": "joined", "player_id": player.id}
