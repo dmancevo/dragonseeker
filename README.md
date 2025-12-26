@@ -5,7 +5,8 @@ A social deduction party game built with FastAPI, HTMX, Tailwind CSS, and DaisyU
 ## 🎯 Game Overview
 
 **Villagers, Knights & Dragon** is a real-time multiplayer social deduction game where players are assigned secret roles:
-- **Villagers & Knights**: Know the secret word and must identify the Dragon
+- **Villagers**: Know the secret word and must identify the Dragon
+- **Knights**: Know a similar (but different) word and must identify the Dragon. Knights don't know they are knights - they think they are villagers!
 - **Dragon**: Doesn't know the word and must blend in to survive
 
 ### How to Play
