@@ -19,7 +19,7 @@
                 </svg>
                 <div class="text-left">
                     <div class="text-sm">Dragon's guess: <strong>{{ dragon_guess }}</strong></div>
-                    <div class="text-sm">Secret word: <strong>{{ word }}</strong></div>
+                    <div class="text-sm">Villager word: <strong>{{ villager_word }}</strong></div>
                 </div>
             </div>
             {% else %}
@@ -38,7 +38,7 @@
                 </svg>
                 <div class="text-left">
                     <div class="text-sm">Dragon guessed: <strong>{{ dragon_guess }}</strong></div>
-                    <div class="text-sm">Secret word was: <strong>{{ word }}</strong></div>
+                    <div class="text-sm">Villager word was: <strong>{{ villager_word }}</strong></div>
                 </div>
             </div>
             {% else %}
@@ -48,12 +48,27 @@
         </div>
     </div>
 
-    <!-- Secret Word Reveal -->
-    <div class="alert alert-info mb-8">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-        <span>The secret word was: <strong class="text-2xl ml-2">{{ word }}</strong></span>
+    <!-- Secret Words Reveal -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div class="alert alert-success">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+                <div class="text-sm">Villagers' word 🏘️</div>
+                <div class="font-bold text-xl">{{ villager_word }}</div>
+            </div>
+        </div>
+
+        <div class="alert alert-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+                <div class="text-sm">Knight's word ⚔️</div>
+                <div class="font-bold text-xl">{{ knight_word }}</div>
+            </div>
+        </div>
     </div>
 
     <!-- Player Roles Revealed -->

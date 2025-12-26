@@ -72,6 +72,7 @@
                 <button
                     id="start-game-btn"
                     hx-post="/api/games/{{ game.game_id }}/start?player_id={{ player_id }}"
+                    hx-swap="none"
                     class="btn btn-success btn-lg btn-block"
                     {% if game.players|length < min_players %}disabled{% endif %}>
                     Start Game

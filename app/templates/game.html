@@ -84,6 +84,7 @@
                     <h3 class="card-title text-lg">Host Controls</h3>
                     <button
                         hx-post="/api/games/{{ game.game_id }}/start-voting?player_id={{ player_id }}"
+                        hx-swap="none"
                         class="btn btn-warning btn-block">
                         Start Voting Round
                     </button>
@@ -133,7 +134,7 @@
                     <div id="vote-buttons" class="space-y-2">
                         {% for p in game.players.values() %}
                         {% if p.is_alive and p.id != player_id %}
-                        <form hx-post="/api/games/{{ game.game_id }}/vote?player_id={{ player_id }}">
+                        <form hx-post="/api/games/{{ game.game_id }}/vote?player_id={{ player_id }}" hx-swap="none">
                             <input type="hidden" name="target_id" value="{{ p.id }}">
                             <button type="submit" class="btn btn-outline btn-error btn-block justify-start">
                                 <span class="avatar placeholder">
@@ -161,7 +162,7 @@
                     <h2 class="card-title text-error">Final Chance!</h2>
                     <p class="text-sm mb-4">You've been eliminated. Guess the secret word to win!</p>
 
-                    <form hx-post="/api/games/{{ game.game_id }}/guess-word?player_id={{ player_id }}">
+                    <form hx-post="/api/games/{{ game.game_id }}/guess-word?player_id={{ player_id }}" hx-swap="none">
                         <div class="form-control">
                             <input
                                 type="text"

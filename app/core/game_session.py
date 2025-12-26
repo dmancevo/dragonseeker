@@ -10,7 +10,7 @@ from fastapi import WebSocket
 
 from .player import Player
 from .roles import assign_roles, Role
-from .constants import WORD_LIST, MIN_PLAYERS
+from .constants import WORD_PAIRS, MIN_PLAYERS
 
 
 class GameState(str, Enum):
@@ -34,7 +34,8 @@ class GameSession:
         self.game_id: str = game_id
         self.players: dict[str, Player] = {}
         self.state: GameState = GameState.LOBBY
-        self.word: Optional[str] = None
+        self.villager_word: Optional[str] = None  # Word for villagers
+        self.knight_word: Optional[str] = None    # Similar word for knights
         self.created_at: datetime = datetime.now()
         self.started_at: Optional[datetime] = None
         self.votes: dict[str, str] = {}  # voter_id -> target_id
@@ -104,8 +105,10 @@ class GameSession:
         players_list = list(self.players.values())
         assign_roles(players_list)
 
-        # Select random word
-        self.word = random.choice(WORD_LIST)
+        # Select random word pair
+        word_pair = random.choice(WORD_PAIRS)
+        self.villager_word = word_pair[0]  # Main word for villagers
+        self.knight_word = word_pair[1]    # Similar word for knights
 
         # Update state
         self.state = GameState.PLAYING
@@ -203,12 +206,20 @@ class GameSession:
 
         alive_count = sum(1 for p in self.players.values() if p.is_alive)
 
+        # Determine which word to show based on role
+        your_word = None
+        if player.knows_word:
+            if player.role == Role.KNIGHT.value:
+                your_word = self.knight_word
+            else:  # Villager
+                your_word = self.villager_word
+
         state_data = {
             "game_id": self.game_id,
             "state": self.state.value,
             "your_id": player_id,
             "your_role": player.role,
-            "your_word": self.word if player.knows_word else None,
+            "your_word": your_word,
             "is_host": player.is_host,
             "is_alive": player.is_alive,
             "players": [p.to_dict() for p in self.players.values()],
@@ -221,7 +232,8 @@ class GameSession:
 
         if self.state == GameState.FINISHED:
             state_data["winner"] = self.winner
-            state_data["word"] = self.word
+            state_data["villager_word"] = self.villager_word
+            state_data["knight_word"] = self.knight_word
             state_data["dragon_guess"] = self.dragon_guess
             state_data["players"] = [p.to_dict(include_role=True) for p in self.players.values()]
 

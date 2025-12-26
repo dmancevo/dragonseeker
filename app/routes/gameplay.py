@@ -48,12 +48,20 @@ async def show_game(request: Request, game_id: str, player_id: str = Query(...))
     if game.state == GameState.FINISHED:
         return RedirectResponse(url=f"/game/{game_id}/results?player_id={player_id}")
 
+    # Determine which word to show based on player's role
+    word = None
+    if player.knows_word:
+        if player.role == Role.KNIGHT.value:
+            word = game.knight_word
+        else:  # Villager
+            word = game.villager_word
+
     return templates.TemplateResponse("game.html", {
         "request": request,
         "game": game,
         "player": player,
         "player_id": player_id,
-        "word": game.word if player.knows_word else None
+        "word": word
     })
 
 
@@ -196,9 +204,9 @@ async def guess_word(game_id: str, guess: str = Form(...), player_id: str = Quer
     if game.state != GameState.DRAGON_GUESS:
         raise HTTPException(status_code=400, detail="Not in dragon guess phase")
 
-    # Clean and check if guess is correct
+    # Clean and check if guess is correct (check against villager word)
     guess = guess.strip().lower()
-    correct = guess == game.word.lower()
+    correct = guess == game.villager_word.lower()
 
     # Set winner
     winner = "dragon" if correct else "villagers"
@@ -214,8 +222,7 @@ async def guess_word(game_id: str, guess: str = Form(...), player_id: str = Quer
 
     return {
         "correct": correct,
-        "winner": winner,
-        "word": game.word
+        "winner": winner
     }
 
 
@@ -250,6 +257,7 @@ async def show_results(request: Request, game_id: str, player_id: str = Query(..
         "player": player,
         "player_id": player_id,
         "winner": game.winner,
-        "word": game.word,
+        "villager_word": game.villager_word,
+        "knight_word": game.knight_word,
         "dragon_guess": game.dragon_guess
     })
