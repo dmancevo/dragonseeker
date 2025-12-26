@@ -153,18 +153,77 @@ class GameWebSocket {
             updateStartButton(state.can_start);
         }
 
-        // Handle vote status
-        if (state.has_voted) {
-            const voteButtons = document.getElementById('vote-buttons');
-            const voteStatus = document.getElementById('vote-status');
-            if (voteButtons) voteButtons.style.display = 'none';
-            if (voteStatus) voteStatus.style.display = 'block';
+        // Show elimination notification if present
+        const eliminationNotification = document.getElementById('elimination-notification');
+        const eliminationText = document.getElementById('elimination-text');
+        if (eliminationNotification && eliminationText && state.last_elimination) {
+            const elim = state.last_elimination;
+            const roleEmoji = elim.eliminated_role === 'dragon' ? '🐉' :
+                             elim.eliminated_role === 'knight' ? '⚔️' : '🏘️';
+            const roleClass = elim.eliminated_role === 'dragon' ? 'text-error' :
+                             elim.eliminated_role === 'knight' ? 'text-secondary' : 'text-success';
+
+            eliminationText.innerHTML = `
+                <strong>${elim.eliminated_nickname}</strong> was eliminated!
+                They were a <span class="${roleClass} font-bold">${roleEmoji} ${elim.eliminated_role.toUpperCase()}</span>
+                ${elim.was_tie ? ' (decided by tie-breaker)' : ''}
+            `;
+            eliminationNotification.style.display = 'flex';
+        } else if (eliminationNotification && !state.last_elimination) {
+            // Hide notification if no elimination data
+            eliminationNotification.style.display = 'none';
         }
 
-        // Show/hide voting area
+        // Show/hide voting area and spectator message based on player state
         const votingArea = document.getElementById('voting-area');
-        if (votingArea) {
-            votingArea.style.display = state.state === 'voting' ? 'block' : 'none';
+        const spectatorMessage = document.getElementById('spectator-message');
+        const voteButtons = document.getElementById('vote-buttons');
+        const voteStatus = document.getElementById('vote-status');
+
+        // Update voting UI based on player alive status and game state
+        if (state.state === 'voting') {
+            if (state.is_alive) {
+                // Alive player - show voting area
+                if (votingArea) votingArea.style.display = 'block';
+                if (spectatorMessage) spectatorMessage.style.display = 'none';
+
+                // Update vote buttons with current alive players
+                if (typeof updateVoteButtons === 'function' && state.players) {
+                    updateVoteButtons(state.players, state.game_id, state.your_id);
+                }
+
+                // Handle vote status
+                if (state.has_voted) {
+                    if (voteButtons) voteButtons.style.display = 'none';
+                    if (voteStatus) voteStatus.style.display = 'block';
+                } else {
+                    if (voteButtons) voteButtons.style.display = 'block';
+                    if (voteStatus) voteStatus.style.display = 'none';
+                }
+            } else {
+                // Dead player - show spectator message
+                if (votingArea) votingArea.style.display = 'none';
+                if (spectatorMessage) spectatorMessage.style.display = 'block';
+
+                // Update spectator status
+                const spectatorStatus = document.getElementById('spectator-status');
+                if (spectatorStatus) {
+                    spectatorStatus.textContent = `Voting in progress... ${state.votes_submitted} of ${state.alive_count} players have voted`;
+                }
+            }
+        } else {
+            // Not in voting state - hide both
+            if (votingArea) votingArea.style.display = 'none';
+            if (spectatorMessage && state.is_alive) spectatorMessage.style.display = 'none';
+
+            // Update spectator message for eliminated players during discussion
+            if (spectatorMessage && !state.is_alive && state.state === 'playing') {
+                spectatorMessage.style.display = 'block';
+                const spectatorStatus = document.getElementById('spectator-status');
+                if (spectatorStatus) {
+                    spectatorStatus.textContent = 'Players are discussing... waiting for voting to start';
+                }
+            }
         }
 
         // Handle state transitions with redirects

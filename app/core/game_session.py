@@ -43,6 +43,7 @@ class GameSession:
         self.winner: Optional[str] = None  # "villagers" or "dragon"
         self.dragon_guess: Optional[str] = None
         self.eliminated_player_id: Optional[str] = None
+        self.last_elimination: Optional[dict] = None  # Stores last elimination details
 
     def add_player(self, nickname: str) -> Player:
         """Add a new player to the game.
@@ -163,13 +164,16 @@ class GameSession:
         eliminated_player.is_alive = False
         self.eliminated_player_id = eliminated_id
 
-        return {
+        # Store elimination details for display
+        self.last_elimination = {
             "eliminated_id": eliminated_id,
             "eliminated_nickname": eliminated_player.nickname,
             "eliminated_role": eliminated_player.role,
             "vote_counts": dict(vote_counts),
             "was_tie": len(tied_players) > 1
         }
+
+        return self.last_elimination
 
     def check_win_condition(self) -> Optional[str]:
         """Check if game has reached a win condition.
@@ -228,6 +232,7 @@ class GameSession:
             "can_start": self.can_start(),
             "votes_submitted": len(self.votes),
             "has_voted": player_id in self.votes,
+            "last_elimination": self.last_elimination,
         }
 
         if self.state == GameState.FINISHED:
