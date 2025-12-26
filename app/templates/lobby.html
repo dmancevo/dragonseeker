@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Game Lobby - Villagers, Knights & Dragon{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto" hx-ext="ws" ws-connect="/ws/{{ game.game_id }}/{{ player_id }}">
+    <!-- Share Link Card -->
+    <div class="alert alert-info mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div class="flex-1">
+            <h3 class="font-bold">Share this link with your friends!</h3>
+            <div class="flex gap-2 mt-2">
+                <input
+                    type="text"
+                    value="{{ share_url }}"
+                    readonly
+                    id="share-link"
+                    class="input input-bordered input-sm flex-1"
+                />
+                <button onclick="copyShareLink()" class="btn btn-sm btn-primary">
+                    Copy Link
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Players Card -->
+    <div class="card bg-base-100 shadow-xl mb-6">
+        <div class="card-body">
+            <h2 class="card-title">
+                Players
+                <div class="badge badge-primary" id="player-count">{{ game.players|length }}</div>
+            </h2>
+
+            <div id="player-list" class="space-y-2 mt-4">
+                {% for p in game.players.values() %}
+                <div class="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
+                    <div class="avatar placeholder">
+                        <div class="bg-primary text-primary-content rounded-full w-12">
+                            <span class="text-xl">{{ p.nickname[0]|upper }}</span>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-semibold">{{ p.nickname }}</div>
+                        {% if p.is_host %}
+                        <div class="badge badge-sm badge-secondary">Host</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if game.players|length < min_players %}
+            <div class="alert alert-warning mt-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>Waiting for more players (minimum {{ min_players }} required)</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Start Button (Host Only) -->
+    {% if is_host %}
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">Ready to Start?</h2>
+            <p class="text-sm text-base-content/70">Make sure all players have joined before starting the game.</p>
+
+            <div class="card-actions justify-end mt-4">
+                <button
+                    hx-post="/api/games/{{ game.game_id }}/start?player_id={{ player_id }}"
+                    hx-swap="none"
+                    class="btn btn-success btn-lg btn-block"
+                    {% if game.players|length < min_players %}disabled{% endif %}>
+                    Start Game
+                </button>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info shrink-0 w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span>Waiting for host to start the game...</span>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function copyShareLink() {
+    const input = document.getElementById('share-link');
+    input.select();
+    navigator.clipboard.writeText(input.value);
+
+    // Show toast notification
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('btn-success');
+    setTimeout(() => {
+        btn.textContent = originalText;
+        btn.classList.remove('btn-success');
+    }, 2000);
+}
+
+// Listen for WebSocket state updates
+document.body.addEventListener('htmx:wsMessage', function(event) {
+    const data = JSON.parse(event.detail.message);
+
+    if (data.type === 'state_update') {
+        // Update player count
+        const playerCount = document.getElementById('player-count');
+        if (playerCount) {
+            playerCount.textContent = data.data.player_count;
+        }
+
+        // Refresh player list
+        updatePlayerList(data.data.players);
+
+        // If game started, redirect to play page
+        if (data.data.state === 'playing') {
+            window.location.href = '/game/{{ game.game_id }}/play?player_id={{ player_id }}';
+        }
+    }
+});
+
+function updatePlayerList(players) {
+    const listContainer = document.getElementById('player-list');
+    if (!listContainer) return;
+
+    listContainer.innerHTML = players.map(p => `
+        <div class="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
+            <div class="avatar placeholder">
+                <div class="bg-primary text-primary-content rounded-full w-12">
+                    <span class="text-xl">${p.nickname[0].toUpperCase()}</span>
+                </div>
+            </div>
+            <div class="flex-1">
+                <div class="font-semibold">${p.nickname}</div>
+                ${p.is_host ? '<div class="badge badge-sm badge-secondary">Host</div>' : ''}
+            </div>
+        </div>
+    `).join('');
+}
+</script>
+{% endblock %}

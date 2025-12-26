@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Join Game - Villagers, Knights & Dragon{% endblock %}
+
+{% block content %}
+<div class="flex justify-center items-center min-h-[60vh]">
+    <div class="card w-full max-w-md bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title text-2xl justify-center mb-4">Join Game</h2>
+            <p class="text-center text-base-content/70 mb-6">Enter your nickname to join the game</p>
+
+            <form hx-post="/api/games/{{ game_id }}/join" hx-swap="none">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Nickname</span>
+                    </label>
+                    <input
+                        type="text"
+                        name="nickname"
+                        placeholder="Enter your nickname"
+                        class="input input-bordered w-full"
+                        required
+                        minlength="1"
+                        maxlength="20"
+                        autofocus
+                    />
+                    <label class="label">
+                        <span class="label-text-alt">3-20 characters, letters and numbers only</span>
+                    </label>
+                </div>
+
+                <div class="form-control mt-6">
+                    <button type="submit" class="btn btn-primary btn-block">
+                        Join Game
+                    </button>
+                </div>
+            </form>
+
+            <div class="divider">OR</div>
+
+            <a href="/" class="btn btn-ghost btn-block">
+                Create New Game Instead
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

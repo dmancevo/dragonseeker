@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Game Over - Villagers, Knights & Dragon{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Winner Announcement -->
+    <div class="card bg-base-100 shadow-2xl mb-8">
+        <div class="card-body items-center text-center">
+            {% if winner == 'dragon' %}
+            <div class="text-8xl mb-4">🐉</div>
+            <h2 class="card-title text-5xl text-error mb-4">Dragon Wins!</h2>
+            <p class="text-xl mb-4">The Dragon has prevailed!</p>
+
+            {% if dragon_guess %}
+            <div class="alert alert-success max-w-md">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div class="text-left">
+                    <div class="text-sm">Dragon's guess: <strong>{{ dragon_guess }}</strong></div>
+                    <div class="text-sm">Secret word: <strong>{{ word }}</strong></div>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-lg">The Dragon survived to the end!</p>
+            {% endif %}
+
+            {% else %}
+            <div class="text-8xl mb-4">⚔️🏘️</div>
+            <h2 class="card-title text-5xl text-success mb-4">Villagers & Knights Win!</h2>
+            <p class="text-xl mb-4">The Dragon has been defeated!</p>
+
+            {% if dragon_guess %}
+            <div class="alert alert-error max-w-md">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div class="text-left">
+                    <div class="text-sm">Dragon guessed: <strong>{{ dragon_guess }}</strong></div>
+                    <div class="text-sm">Secret word was: <strong>{{ word }}</strong></div>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-lg">The Dragon was successfully identified and eliminated!</p>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Secret Word Reveal -->
+    <div class="alert alert-info mb-8">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span>The secret word was: <strong class="text-2xl ml-2">{{ word }}</strong></span>
+    </div>
+
+    <!-- Player Roles Revealed -->
+    <div class="card bg-base-100 shadow-xl mb-8">
+        <div class="card-body">
+            <h2 class="card-title mb-4">Player Roles</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for p in game.players.values() %}
+                <div class="flex items-center gap-3 p-4 rounded-lg
+                    {% if p.role == 'dragon' %}bg-error/10 border-2 border-error
+                    {% elif p.role == 'knight' %}bg-secondary/10 border-2 border-secondary
+                    {% else %}bg-success/10 border-2 border-success{% endif %}">
+
+                    <div class="text-4xl">
+                        {% if p.role == 'dragon' %}🐉
+                        {% elif p.role == 'knight' %}⚔️
+                        {% else %}🏘️{% endif %}
+                    </div>
+
+                    <div class="flex-1">
+                        <div class="font-bold text-lg">{{ p.nickname }}</div>
+                        <div class="badge
+                            {% if p.role == 'dragon' %}badge-error
+                            {% elif p.role == 'knight' %}badge-secondary
+                            {% else %}badge-success{% endif %}">
+                            {{ p.role|title }}
+                        </div>
+                        {% if not p.is_alive %}
+                        <div class="text-xs text-error mt-1">Eliminated</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <button
+            hx-post="/api/games/create"
+            hx-swap="none"
+            class="btn btn-primary btn-lg gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Play Again
+        </button>
+
+        <a href="/" class="btn btn-ghost btn-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            Return Home
+        </a>
+    </div>
+</div>
+{% endblock %}

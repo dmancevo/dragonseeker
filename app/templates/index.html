@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero min-h-[60vh]">
+    <div class="hero-content text-center">
+        <div class="max-w-2xl">
+            <h1 class="text-5xl font-bold mb-4">Villagers, Knights & Dragon</h1>
+            <p class="text-xl mb-8">A social deduction party game for 3-12 players</p>
+
+            <button
+                hx-post="/api/games/create"
+                hx-swap="none"
+                class="btn btn-primary btn-lg gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Create New Game
+            </button>
+
+            <!-- Game Rules -->
+            <div class="mt-12">
+                <div class="collapse collapse-arrow bg-base-100 shadow-xl">
+                    <input type="checkbox" />
+                    <div class="collapse-title text-xl font-medium">
+                        📖 How to Play
+                    </div>
+                    <div class="collapse-content text-left">
+                        <div class="space-y-4">
+                            <div>
+                                <h3 class="font-bold text-lg mb-2">🎭 Roles</h3>
+                                <ul class="list-disc list-inside space-y-1">
+                                    <li><strong>Villagers & Knights:</strong> Know the secret word. Must identify and eliminate the Dragon.</li>
+                                    <li><strong>Dragon:</strong> Doesn't know the word! Must blend in and avoid being caught.</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h3 class="font-bold text-lg mb-2">🎯 Objective</h3>
+                                <ul class="list-disc list-inside space-y-1">
+                                    <li><strong>Villagers/Knights win if:</strong> They successfully vote out the Dragon</li>
+                                    <li><strong>Dragon wins if:</strong> They survive until only 2 players remain, OR correctly guess the word after being eliminated</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h3 class="font-bold text-lg mb-2">🎮 Game Flow</h3>
+                                <ol class="list-decimal list-inside space-y-1">
+                                    <li>Host creates a game and shares the link with friends</li>
+                                    <li>Players join and enter their nicknames</li>
+                                    <li>Host starts the game (minimum 3 players)</li>
+                                    <li>Each player receives their role and secret word (or blank for Dragon)</li>
+                                    <li>Players discuss to figure out who the Dragon is</li>
+                                    <li>Host initiates voting when ready</li>
+                                    <li>All players vote for who they think is the Dragon</li>
+                                    <li>Player with most votes is eliminated</li>
+                                    <li>If Dragon is eliminated, they get one chance to guess the word</li>
+                                    <li>Game continues until a winner is determined</li>
+                                </ol>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span><strong>Tip:</strong> Best played in person or over voice chat for maximum fun!</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

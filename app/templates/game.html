@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}Playing - Villagers, Knights & Dragon{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto" hx-ext="ws" ws-connect="/ws/{{ game.game_id }}/{{ player_id }}">
+    <!-- Game Status Bar -->
+    <div class="alert mb-6" id="game-status">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span id="status-text">
+            {% if game.state.value == 'playing' %}
+            Discussion Phase - Discuss to find the Dragon!
+            {% elif game.state.value == 'voting' %}
+            Voting Phase - Vote for who you think is the Dragon
+            {% elif game.state.value == 'dragon_guess' %}
+            Dragon is guessing the word...
+            {% endif %}
+        </span>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Left Column: Your Role -->
+        <div>
+            <!-- Your Role Card -->
+            <div class="card bg-base-100 shadow-xl mb-6">
+                <div class="card-body">
+                    <h2 class="card-title">Your Role</h2>
+
+                    {% if player.role == 'dragon' %}
+                    <div class="flex items-center gap-4 p-4 bg-error/10 rounded-lg border-2 border-error">
+                        <div class="text-6xl">🐉</div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-error">Dragon</h3>
+                            <p class="text-sm">You don't know the word! Blend in and survive.</p>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning mt-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span class="text-sm">The word is: <strong>???</strong></span>
+                    </div>
+
+                    {% elif player.role == 'knight' %}
+                    <div class="flex items-center gap-4 p-4 bg-secondary/10 rounded-lg border-2 border-secondary">
+                        <div class="text-6xl">⚔️</div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-secondary">Knight</h3>
+                            <p class="text-sm">Protect the villagers! Find the Dragon.</p>
+                        </div>
+                    </div>
+                    <div class="alert alert-success mt-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="text-sm">The secret word is: <strong class="text-lg">{{ word }}</strong></span>
+                    </div>
+
+                    {% else %}
+                    <div class="flex items-center gap-4 p-4 bg-success/10 rounded-lg border-2 border-success">
+                        <div class="text-6xl">🏘️</div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-success">Villager</h3>
+                            <p class="text-sm">Work together to find the Dragon!</p>
+                        </div>
+                    </div>
+                    <div class="alert alert-success mt-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="text-sm">The secret word is: <strong class="text-lg">{{ word }}</strong></span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Host Controls -->
+            {% if player.is_host and game.state.value == 'playing' %}
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h3 class="card-title text-lg">Host Controls</h3>
+                    <button
+                        hx-post="/api/games/{{ game.game_id }}/start-voting?player_id={{ player_id }}"
+                        hx-swap="none"
+                        class="btn btn-warning btn-block">
+                        Start Voting Round
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column: Players & Voting -->
+        <div>
+            <!-- Players Grid -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        Players
+                        <div class="badge badge-primary" id="alive-count">
+                            {{ game.players.values()|selectattr('is_alive')|list|length }} alive
+                        </div>
+                    </h2>
+
+                    <div id="players-grid" class="grid grid-cols-2 gap-3 mt-4">
+                        {% for p in game.players.values() %}
+                        <div class="flex items-center gap-2 p-3 rounded-lg {% if p.is_alive %}bg-base-200{% else %}bg-base-300 opacity-50{% endif %}">
+                            <div class="avatar placeholder">
+                                <div class="bg-primary text-primary-content rounded-full w-10">
+                                    <span>{{ p.nickname[0]|upper }}</span>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-semibold truncate">{{ p.nickname }}</div>
+                                {% if not p.is_alive %}
+                                <div class="text-xs text-error">Eliminated</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Voting Area -->
+            <div id="voting-area" class="card bg-base-100 shadow-xl mt-6" style="{% if game.state.value != 'voting' %}display: none;{% endif %}">
+                <div class="card-body">
+                    <h2 class="card-title">Cast Your Vote</h2>
+                    <p class="text-sm text-base-content/70 mb-4">Vote for who you think is the Dragon</p>
+
+                    <div id="vote-buttons" class="space-y-2">
+                        {% for p in game.players.values() %}
+                        {% if p.is_alive and p.id != player_id %}
+                        <button
+                            hx-post="/api/games/{{ game.game_id }}/vote?player_id={{ player_id }}"
+                            hx-vals='{"target_id": "{{ p.id }}"}'
+                            hx-swap="none"
+                            class="btn btn-outline btn-error btn-block justify-start">
+                            <span class="avatar placeholder">
+                                <div class="bg-primary text-primary-content rounded-full w-8">
+                                    <span class="text-sm">{{ p.nickname[0]|upper }}</span>
+                                </div>
+                            </span>
+                            Vote for {{ p.nickname }}
+                        </button>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <div id="vote-status" class="alert alert-info mt-4" style="display: none;">
+                        <span>Vote submitted! Waiting for other players...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dragon Guess Area -->
+            {% if player.role == 'dragon' and game.state.value == 'dragon_guess' %}
+            <div id="guess-area" class="card bg-base-100 shadow-xl mt-6">
+                <div class="card-body">
+                    <h2 class="card-title text-error">Final Chance!</h2>
+                    <p class="text-sm mb-4">You've been eliminated. Guess the secret word to win!</p>
+
+                    <form hx-post="/api/games/{{ game.game_id }}/guess-word?player_id={{ player_id }}" hx-swap="none">
+                        <div class="form-control">
+                            <input
+                                type="text"
+                                name="guess"
+                                placeholder="Enter your guess..."
+                                class="input input-bordered"
+                                required
+                                autofocus
+                            />
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block mt-4">
+                            Submit Guess
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// WebSocket state update handler
+document.body.addEventListener('htmx:wsMessage', function(event) {
+    const data = JSON.parse(event.detail.message);
+
+    if (data.type === 'state_update') {
+        const state = data.data;
+
+        // Update status bar
+        updateStatusBar(state.state);
+
+        // Update players grid
+        updatePlayersGrid(state.players);
+
+        // Update alive count
+        const aliveCount = document.getElementById('alive-count');
+        if (aliveCount) {
+            aliveCount.textContent = state.alive_count + ' alive';
+        }
+
+        // Show/hide voting area
+        const votingArea = document.getElementById('voting-area');
+        if (votingArea) {
+            votingArea.style.display = state.state === 'voting' ? 'block' : 'none';
+        }
+
+        // If vote submitted
+        if (state.has_voted) {
+            const voteButtons = document.getElementById('vote-buttons');
+            const voteStatus = document.getElementById('vote-status');
+            if (voteButtons) voteButtons.style.display = 'none';
+            if (voteStatus) voteStatus.style.display = 'block';
+        }
+
+        // Redirect to results if finished
+        if (state.state === 'finished') {
+            window.location.href = '/game/{{ game.game_id }}/results?player_id={{ player_id }}';
+        }
+    }
+});
+
+function updateStatusBar(state) {
+    const statusText = document.getElementById('status-text');
+    if (!statusText) return;
+
+    const messages = {
+        'playing': 'Discussion Phase - Discuss to find the Dragon!',
+        'voting': 'Voting Phase - Vote for who you think is the Dragon',
+        'dragon_guess': 'Dragon is guessing the word...'
+    };
+
+    statusText.textContent = messages[state] || 'Game in progress';
+}
+
+function updatePlayersGrid(players) {
+    const grid = document.getElementById('players-grid');
+    if (!grid) return;
+
+    grid.innerHTML = players.map(p => `
+        <div class="flex items-center gap-2 p-3 rounded-lg ${p.is_alive ? 'bg-base-200' : 'bg-base-300 opacity-50'}">
+            <div class="avatar placeholder">
+                <div class="bg-primary text-primary-content rounded-full w-10">
+                    <span>${p.nickname[0].toUpperCase()}</span>
+                </div>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="font-semibold truncate">${p.nickname}</div>
+                ${!p.is_alive ? '<div class="text-xs text-error">Eliminated</div>' : ''}
+            </div>
+        </div>
+    `).join('');
+}
+</script>
+{% endblock %}
