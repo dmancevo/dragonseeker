@@ -1,10 +1,10 @@
 """Game manager singleton for coordinating multiple games."""
-from datetime import datetime, timedelta
-from typing import Optional
-import secrets
 
-from .game_session import GameSession
+import secrets
+from datetime import datetime, timedelta
+
 from .constants import GAME_TTL_SECONDS
+from .game_session import GameSession
 
 
 class GameManager:
@@ -31,7 +31,7 @@ class GameManager:
         self.games[game_id] = game
         return game
 
-    def get_game(self, game_id: str) -> Optional[GameSession]:
+    def get_game(self, game_id: str) -> GameSession | None:
         """Retrieve a game session by ID.
 
         Args:
@@ -61,8 +61,7 @@ class GameManager:
         cutoff_time = now - timedelta(seconds=GAME_TTL_SECONDS)
 
         stale_game_ids = [
-            game_id for game_id, game in self.games.items()
-            if game.created_at < cutoff_time
+            game_id for game_id, game in self.games.items() if game.created_at < cutoff_time
         ]
 
         for game_id in stale_game_ids:
@@ -77,13 +76,12 @@ class GameManager:
             Dictionary with game statistics
         """
         total_players = sum(len(game.players) for game in self.games.values())
-        active_games = sum(1 for game in self.games.values()
-                          if game.state.value != "finished")
+        active_games = sum(1 for game in self.games.values() if game.state.value != "finished")
 
         return {
             "total_games": len(self.games),
             "active_games": active_games,
-            "total_players": total_players
+            "total_players": total_players,
         }
 
 

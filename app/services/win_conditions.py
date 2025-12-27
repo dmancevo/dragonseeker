@@ -1,5 +1,5 @@
 """Win condition checking service."""
-from typing import Optional
+
 from core.game_session import GameSession
 from core.roles import Role
 
@@ -29,12 +29,10 @@ def check_dragon_survived(game: GameSession) -> bool:
     alive_players = [p for p in game.players.values() if p.is_alive]
     dragon = next((p for p in game.players.values() if p.role == Role.DRAGON.value), None)
 
-    return (dragon is not None and
-            dragon.is_alive and
-            len(alive_players) <= 2)
+    return dragon is not None and dragon.is_alive and len(alive_players) <= 2
 
 
-def determine_winner(game: GameSession) -> Optional[str]:
+def determine_winner(game: GameSession) -> str | None:
     """Determine the winner of the game.
 
     Args:

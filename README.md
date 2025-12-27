@@ -165,23 +165,83 @@ The app is configured for automatic deployment:
 2. Digital Ocean auto-deploys on push to `main` branch
 3. Configuration in `.do/app.yaml`
 
-## 🧪 Testing
+## 🧪 Development & Testing
 
-Run the built-in tests:
+This project uses modern Python development tools for testing, linting, and type checking.
+
+### Install Development Dependencies
 
 ```bash
 cd app
-uv run python -c "
-from core.game_manager import game_manager
-game = game_manager.create_game()
-game.add_player('Alice')
-game.add_player('Bob')
-game.add_player('Charlie')
-game.start_game()
-print(f'Game started! Word: {game.word}')
-for p in game.players.values():
-    print(f'{p.nickname}: {p.role}')
-"
+uv sync --group dev
+```
+
+This installs:
+- **pytest** - Testing framework with async support
+- **ruff** - Fast linter and code formatter
+- **ty** - Fast type checker by Astral (makers of Ruff)
+
+### Running Tests
+
+Run all tests with pytest:
+
+```bash
+cd app
+uv run pytest           # Run all tests
+uv run pytest -v        # Verbose output
+uv run pytest -v -s     # Verbose with print statements
+```
+
+The test suite includes 31 tests covering:
+- Voting logic (`tests/services/test_voting.py`)
+- Win conditions (`tests/services/test_win_conditions.py`)
+- Game state transitions (`tests/services/test_game_state.py`)
+
+### Code Formatting
+
+Format code with ruff:
+
+```bash
+cd app
+uv run ruff format .    # Format all Python files
+```
+
+### Linting
+
+Check code quality with ruff:
+
+```bash
+cd app
+uv run ruff check .           # Check for issues
+uv run ruff check --fix .     # Auto-fix issues
+```
+
+Ruff checks for:
+- Code style (pycodestyle)
+- Common bugs (flake8-bugbear)
+- Import sorting (isort)
+- Modern Python syntax (pyupgrade)
+- Async best practices (proper cleanup, unclosed clients)
+
+### Type Checking
+
+Run type checking with ty:
+
+```bash
+cd app
+uv run ty check .       # Check for type errors
+```
+
+### Pre-commit Workflow
+
+Before committing code, run:
+
+```bash
+cd app
+uv run ruff format .      # Format code
+uv run ruff check --fix . # Fix linting issues
+uv run pytest             # Run tests
+uv run ty check .         # Check types
 ```
 
 ## 🎨 Customization

@@ -1,22 +1,38 @@
 """Main FastAPI application for Dragonseeker game."""
+
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.middleware.cors import CORSMiddleware
 
-from routes import game, lobby, gameplay, websocket
 from core.game_manager import game_manager
+from routes import game, gameplay, lobby, websocket
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan events."""
+    # Startup
+    print("🎮 Dragonseeker game server starting...")
+    print("🔗 Game manager initialized")
+    yield
+    # Shutdown
+    print("👋 Shutting down game server...")
+
 
 # Initialize FastAPI app
 app = FastAPI(
     title="Dragonseeker",
     description="A social deduction party game",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 # Configure CORS for development
 app.add_middleware(
-    CORSMiddleware,
+    CORSMiddleware,  # type: ignore[arg-type]
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
@@ -49,18 +65,5 @@ async def health_check():
     return {
         "status": "healthy",
         "active_games": stats["active_games"],
-        "total_players": stats["total_players"]
+        "total_players": stats["total_players"],
     }
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Run on application startup."""
-    print("🎮 Dragonseeker game server starting...")
-    print("🔗 Game manager initialized")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Run on application shutdown."""
-    print("👋 Shutting down game server...")

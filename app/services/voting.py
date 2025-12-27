@@ -1,9 +1,9 @@
 """Voting service helpers."""
-from typing import Optional
+
 from core.game_session import GameSession, GameState
 
 
-def can_vote(game: GameSession, player_id: str) -> tuple[bool, Optional[str]]:
+def can_vote(game: GameSession, player_id: str) -> tuple[bool, str | None]:
     """Check if a player can vote.
 
     Args:

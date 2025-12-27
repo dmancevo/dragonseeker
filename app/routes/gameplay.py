@@ -1,15 +1,20 @@
 """Routes for active gameplay (voting, guessing, etc.)."""
-from fastapi import APIRouter, HTTPException, Request, Query, Response, Form
+
+from fastapi import APIRouter, Form, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from core.game_manager import game_manager
 from core.game_session import GameState
 from core.roles import Role
-from models.requests import VoteRequest
-from services.voting import can_vote, all_votes_submitted
-from services.game_state import can_start_voting, transition_to_voting, transition_to_playing, transition_to_finished
-from services.win_conditions import determine_winner, check_dragon_eliminated
+from services.game_state import (
+    can_start_voting,
+    transition_to_finished,
+    transition_to_playing,
+    transition_to_voting,
+)
+from services.voting import all_votes_submitted, can_vote
+from services.win_conditions import check_dragon_eliminated, determine_winner
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -56,13 +61,10 @@ async def show_game(request: Request, game_id: str, player_id: str = Query(...))
         else:  # Villager
             word = game.villager_word
 
-    return templates.TemplateResponse("game.html", {
-        "request": request,
-        "game": game,
-        "player": player,
-        "player_id": player_id,
-        "word": word
-    })
+    return templates.TemplateResponse(
+        "game.html",
+        {"request": request, "game": game, "player": player, "player_id": player_id, "word": word},
+    )
 
 
 @router.post("/api/games/{game_id}/start-voting")
@@ -105,7 +107,12 @@ async def start_voting(game_id: str, player_id: str = Query(...)):
 
 
 @router.post("/api/games/{game_id}/vote")
-async def submit_vote(game_id: str, target_id: str = Form(...), player_id: str = Query(...), response: Response = None):
+async def submit_vote(
+    game_id: str,
+    response: Response,
+    target_id: str = Form(...),
+    player_id: str = Query(...),
+):
     """Submit a vote for player elimination.
 
     Args:
@@ -133,7 +140,7 @@ async def submit_vote(game_id: str, target_id: str = Form(...), player_id: str =
     try:
         game.submit_vote(player_id, target_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Check if all votes are in
     if all_votes_submitted(game):
@@ -161,7 +168,7 @@ async def submit_vote(game_id: str, target_id: str = Form(...), player_id: str =
             "status": "vote_complete",
             "result": result,
             "winner": winner,
-            "game_state": game.state.value
+            "game_state": game.state.value,
         }
 
     # Vote submitted, waiting for others
@@ -171,12 +178,17 @@ async def submit_vote(game_id: str, target_id: str = Form(...), player_id: str =
     return {
         "status": "vote_submitted",
         "votes_submitted": len(game.votes),
-        "total_players": alive_count
+        "total_players": alive_count,
     }
 
 
 @router.post("/api/games/{game_id}/guess-word")
-async def guess_word(game_id: str, guess: str = Form(...), player_id: str = Query(...), response: Response = None):
+async def guess_word(
+    game_id: str,
+    response: Response,
+    guess: str = Form(...),
+    player_id: str = Query(...),
+):
     """Dragon attempts to guess the secret word after elimination.
 
     Args:
@@ -204,6 +216,9 @@ async def guess_word(game_id: str, guess: str = Form(...), player_id: str = Quer
     if game.state != GameState.DRAGON_GUESS:
         raise HTTPException(status_code=400, detail="Not in dragon guess phase")
 
+    if not game.villager_word:
+        raise HTTPException(status_code=500, detail="Game state error: word not set")
+
     # Clean and check if guess is correct (check against villager word)
     guess = guess.strip().lower()
     correct = guess == game.villager_word.lower()
@@ -220,10 +235,7 @@ async def guess_word(game_id: str, guess: str = Form(...), player_id: str = Quer
     # Redirect to results page
     response.headers["HX-Redirect"] = f"/game/{game_id}/results?player_id={player_id}"
 
-    return {
-        "correct": correct,
-        "winner": winner
-    }
+    return {"correct": correct, "winner": winner}
 
 
 @router.get("/game/{game_id}/results")
@@ -251,13 +263,16 @@ async def show_results(request: Request, game_id: str, player_id: str = Query(..
     if not player:
         raise HTTPException(status_code=403, detail="Not in this game")
 
-    return templates.TemplateResponse("results.html", {
-        "request": request,
-        "game": game,
-        "player": player,
-        "player_id": player_id,
-        "winner": game.winner,
-        "villager_word": game.villager_word,
-        "knight_word": game.knight_word,
-        "dragon_guess": game.dragon_guess
-    })
+    return templates.TemplateResponse(
+        "results.html",
+        {
+            "request": request,
+            "game": game,
+            "player": player,
+            "player_id": player_id,
+            "winner": game.winner,
+            "villager_word": game.villager_word,
+            "knight_word": game.knight_word,
+            "dragon_guess": game.dragon_guess,
+        },
+    )

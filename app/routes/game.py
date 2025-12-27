@@ -1,10 +1,9 @@
 """Routes for game creation and joining."""
-from fastapi import APIRouter, HTTPException, Request, Response, Form
-from fastapi.responses import RedirectResponse
+
+from fastapi import APIRouter, Form, HTTPException, Request, Response
 from fastapi.templating import Jinja2Templates
 
 from core.game_manager import game_manager
-from models.requests import JoinGameRequest
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -47,14 +46,11 @@ async def show_join_page(request: Request, game_id: str):
     if game.state.value != "lobby":
         raise HTTPException(status_code=400, detail="Game has already started")
 
-    return templates.TemplateResponse("join.html", {
-        "request": request,
-        "game_id": game_id
-    })
+    return templates.TemplateResponse("join.html", {"request": request, "game_id": game_id})
 
 
 @router.post("/api/games/{game_id}/join")
-async def join_game(game_id: str, nickname: str = Form(...), response: Response = None):
+async def join_game(game_id: str, response: Response, nickname: str = Form(...)):
     """Add a player to the game session.
 
     Args:
@@ -82,8 +78,7 @@ async def join_game(game_id: str, nickname: str = Form(...), response: Response 
         raise HTTPException(status_code=400, detail="Invalid nickname")
 
     # Check for duplicate nicknames
-    if any(p.nickname.lower() == nickname.lower()
-           for p in game.players.values()):
+    if any(p.nickname.lower() == nickname.lower() for p in game.players.values()):
         raise HTTPException(status_code=400, detail="Nickname already taken")
 
     # Add player

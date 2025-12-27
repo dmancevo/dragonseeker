@@ -1,19 +1,21 @@
 """Response models for API endpoints."""
-from typing import Optional
+
 from pydantic import BaseModel
 
 
 class PlayerResponse(BaseModel):
     """Player information for API responses."""
+
     id: str
     nickname: str
     is_alive: bool
     is_host: bool
-    role: Optional[str] = None  # Only included in game-over state
+    role: str | None = None  # Only included in game-over state
 
 
 class GameStateResponse(BaseModel):
     """Game state response."""
+
     game_id: str
     state: str
     players: list[PlayerResponse]
@@ -24,6 +26,7 @@ class GameStateResponse(BaseModel):
 
 class VoteResultResponse(BaseModel):
     """Vote tallying result."""
+
     eliminated_id: str
     eliminated_nickname: str
     eliminated_role: str
@@ -33,7 +36,8 @@ class VoteResultResponse(BaseModel):
 
 class GameResultResponse(BaseModel):
     """Final game result."""
+
     winner: str  # "dragon" or "villagers"
     word: str
-    dragon_guess: Optional[str] = None
+    dragon_guess: str | None = None
     players: list[PlayerResponse]

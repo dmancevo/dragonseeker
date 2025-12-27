@@ -30,7 +30,6 @@ WORD_PAIRS = [
     ("monkey", "ape"),
     ("panda", "koala"),
     ("shark", "barracuda"),
-
     # Objects
     ("telescope", "binoculars"),
     ("umbrella", "parasol"),
@@ -47,7 +46,6 @@ WORD_PAIRS = [
     ("backpack", "suitcase"),
     ("wallet", "purse"),
     ("sunglasses", "goggles"),
-
     # Places
     ("museum", "gallery"),
     ("library", "bookstore"),
@@ -64,7 +62,6 @@ WORD_PAIRS = [
     ("waterfall", "fountain"),
     ("castle", "fortress"),
     ("temple", "shrine"),
-
     # Food & Drink
     ("pizza", "flatbread"),
     ("sushi", "sashimi"),
@@ -81,7 +78,6 @@ WORD_PAIRS = [
     ("soup", "stew"),
     ("cheese", "yogurt"),
     ("bread", "toast"),
-
     # Activities
     ("swimming", "diving"),
     ("dancing", "ballet"),
@@ -98,7 +94,6 @@ WORD_PAIRS = [
     ("gardening", "landscaping"),
     ("knitting", "crocheting"),
     ("writing", "typing"),
-
     # Weather & Nature
     ("rainbow", "aurora"),
     ("thunder", "lightning"),
@@ -110,7 +105,6 @@ WORD_PAIRS = [
     ("earthquake", "tremor"),
     ("meteor", "comet"),
     ("eclipse", "solstice"),
-
     # Transportation
     ("airplane", "jet"),
     ("submarine", "U-boat"),
@@ -122,7 +116,6 @@ WORD_PAIRS = [
     ("car", "automobile"),
     ("bus", "coach"),
     ("balloon", "blimp"),
-
     # Sports
     ("basketball", "netball"),
     ("soccer", "football"),
@@ -134,7 +127,6 @@ WORD_PAIRS = [
     ("archery", "darts"),
     ("fencing", "swordplay"),
     ("hockey", "lacrosse"),
-
     # Professions
     ("teacher", "professor"),
     ("doctor", "surgeon"),
@@ -146,7 +138,6 @@ WORD_PAIRS = [
     ("scientist", "researcher"),
     ("artist", "painter"),
     ("musician", "composer"),
-
     # Household Items
     ("refrigerator", "freezer"),
     ("microwave", "oven"),
@@ -158,7 +149,6 @@ WORD_PAIRS = [
     ("blanket", "duvet"),
     ("curtain", "blinds"),
     ("lamp", "chandelier"),
-
     # Colors
     ("crimson", "scarlet"),
     ("azure", "cobalt"),
@@ -175,7 +165,6 @@ WORD_PAIRS = [
     ("silver", "platinum"),
     ("ruby", "garnet"),
     ("pearl", "opal"),
-
     # Emotions & States
     ("joy", "happiness"),
     ("anger", "fury"),
@@ -192,7 +181,6 @@ WORD_PAIRS = [
     ("excitement", "enthusiasm"),
     ("boredom", "apathy"),
     ("confusion", "bewilderment"),
-
     # Body Parts
     ("elbow", "knee"),
     ("wrist", "ankle"),
@@ -209,7 +197,6 @@ WORD_PAIRS = [
     ("skull", "cranium"),
     ("spine", "backbone"),
     ("rib", "sternum"),
-
     # Musical Instruments
     ("banjo", "mandolin"),
     ("violin", "viola"),
@@ -226,7 +213,6 @@ WORD_PAIRS = [
     ("cymbal", "gong"),
     ("organ", "synthesizer"),
     ("tuba", "euphonium"),
-
     # Clothing & Accessories
     ("jacket", "blazer"),
     ("sweater", "cardigan"),
@@ -248,7 +234,6 @@ WORD_PAIRS = [
     ("bracelet", "bangle"),
     ("necklace", "pendant"),
     ("earrings", "studs"),
-
     # Tools & Equipment
     ("hammer", "mallet"),
     ("screwdriver", "wrench"),
@@ -270,7 +255,6 @@ WORD_PAIRS = [
     ("bucket", "pail"),
     ("rope", "cord"),
     ("chain", "cable"),
-
     # Furniture
     ("chair", "stool"),
     ("sofa", "couch"),
@@ -287,7 +271,6 @@ WORD_PAIRS = [
     ("mirror", "vanity"),
     ("rug", "carpet"),
     ("drape", "tapestry"),
-
     # Buildings & Structures
     ("house", "cottage"),
     ("mansion", "estate"),
@@ -304,7 +287,6 @@ WORD_PAIRS = [
     ("cathedral", "basilica"),
     ("mosque", "minaret"),
     ("beacon", "lighthouse"),
-
     # Containers
     ("box", "crate"),
     ("jar", "bottle"),
@@ -321,7 +303,6 @@ WORD_PAIRS = [
     ("trunk", "chest"),
     ("canister", "caddy"),
     ("flask", "carafe"),
-
     # Books & Literature
     ("novel", "novella"),
     ("poem", "verse"),
@@ -338,7 +319,6 @@ WORD_PAIRS = [
     ("tale", "story"),
     ("chapter", "section"),
     ("epilogue", "afterword"),
-
     # School & Education
     ("professor", "instructor"),
     ("student", "pupil"),
@@ -355,7 +335,6 @@ WORD_PAIRS = [
     ("diploma", "certificate"),
     ("scholarship", "grant"),
     ("semester", "quarter"),
-
     # Technology & Computing
     ("computer", "workstation"),
     ("mouse", "trackpad"),
@@ -377,7 +356,6 @@ WORD_PAIRS = [
     ("file", "document"),
     ("server", "database"),
     ("pixel", "resolution"),
-
     # Medical & Health
     ("physician", "practitioner"),
     ("nurse", "medic"),
@@ -394,7 +372,6 @@ WORD_PAIRS = [
     ("prescription", "remedy"),
     ("pharmacy", "drugstore"),
     ("ambulance", "emergency"),
-
     # Shapes & Geometry
     ("circle", "sphere"),
     ("square", "cube"),
@@ -411,7 +388,6 @@ WORD_PAIRS = [
     ("arc", "curve"),
     ("spiral", "helix"),
     ("rhombus", "diamond"),
-
     # Art & Creativity
     ("drawing", "sketch"),
     ("sculpture", "statue"),
@@ -428,7 +404,6 @@ WORD_PAIRS = [
     ("mosaic", "collage"),
     ("illustration", "diagram"),
     ("etching", "engraving"),
-
     # Time & Measurement
     ("second", "moment"),
     ("hour", "period"),
@@ -445,7 +420,6 @@ WORD_PAIRS = [
     ("past", "future"),
     ("stopwatch", "timer"),
     ("calendar", "schedule"),
-
     # Astronomy & Space
     ("star", "sun"),
     ("planet", "world"),
@@ -462,7 +436,6 @@ WORD_PAIRS = [
     ("crater", "impact"),
     ("gravity", "magnetism"),
     ("vacuum", "void"),
-
     # Plants & Flora
     ("tree", "shrub"),
     ("flower", "blossom"),
@@ -484,7 +457,6 @@ WORD_PAIRS = [
     ("garden", "orchard"),
     ("woodland", "timberland"),
     ("meadow", "prairie"),
-
     # Water & Marine
     ("ocean", "sea"),
     ("lake", "pond"),
@@ -501,7 +473,6 @@ WORD_PAIRS = [
     ("harbor", "port"),
     ("dock", "pier"),
     ("whirlpool", "eddy"),
-
     # Landforms & Geography
     ("hill", "knoll"),
     ("valley", "gorge"),
@@ -518,7 +489,6 @@ WORD_PAIRS = [
     ("swamp", "marsh"),
     ("rainforest", "tropics"),
     ("tundra", "steppe"),
-
     # Fabrics & Materials
     ("cotton", "linen"),
     ("silk", "satin"),
@@ -535,7 +505,6 @@ WORD_PAIRS = [
     ("ceramic", "porcelain"),
     ("rubber", "latex"),
     ("paper", "cardboard"),
-
     # Weapons & Combat
     ("sword", "saber"),
     ("dagger", "dirk"),
@@ -547,7 +516,6 @@ WORD_PAIRS = [
     ("cannon", "artillery"),
     ("rifle", "musket"),
     ("pistol", "revolver"),
-
     # Jewelry & Gems
     ("diamond", "crystal"),
     ("sapphire", "topaz"),
@@ -559,7 +527,6 @@ WORD_PAIRS = [
     ("locket", "medallion"),
     ("jewel", "gemstone"),
     ("gold", "platinum"),
-
     # Celebrations & Events
     ("party", "celebration"),
     ("wedding", "marriage"),
@@ -571,7 +538,6 @@ WORD_PAIRS = [
     ("concert", "recital"),
     ("graduation", "commencement"),
     ("reunion", "gathering"),
-
     # Miscellaneous
     ("king", "emperor"),
     ("queen", "empress"),

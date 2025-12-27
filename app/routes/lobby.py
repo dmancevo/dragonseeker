@@ -1,5 +1,6 @@
 """Routes for lobby management."""
-from fastapi import APIRouter, HTTPException, Request, Query, Response
+
+from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -37,21 +38,24 @@ async def show_lobby(request: Request, game_id: str, player_id: str = Query(...)
         return RedirectResponse(url=f"/game/{game_id}/join")
 
     # Build share URL
-    share_url = str(request.base_url).rstrip('/') + f"/game/{game_id}/join"
+    share_url = str(request.base_url).rstrip("/") + f"/game/{game_id}/join"
 
-    return templates.TemplateResponse("lobby.html", {
-        "request": request,
-        "game": game,
-        "player": player,
-        "player_id": player_id,
-        "is_host": player.is_host,
-        "share_url": share_url,
-        "min_players": 3
-    })
+    return templates.TemplateResponse(
+        "lobby.html",
+        {
+            "request": request,
+            "game": game,
+            "player": player,
+            "player_id": player_id,
+            "is_host": player.is_host,
+            "share_url": share_url,
+            "min_players": 3,
+        },
+    )
 
 
 @router.post("/api/games/{game_id}/start")
-async def start_game(game_id: str, player_id: str = Query(...), response: Response = None):
+async def start_game(game_id: str, response: Response, player_id: str = Query(...)):
     """Start the game (assign roles and transition to playing).
 
     Only callable by the host.

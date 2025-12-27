@@ -1,11 +1,12 @@
 """Role definitions and assignment logic."""
-from enum import Enum
-from typing import List
+
 import random
+from enum import Enum
 
 
 class Role(str, Enum):
     """Player roles in the game."""
+
     VILLAGER = "villager"
     KNIGHT = "knight"
     DRAGON = "dragon"
@@ -41,14 +42,10 @@ def calculate_role_distribution(player_count: int) -> dict[Role, int]:
     knights = max(0, (player_count - 3) // 2)
     villagers = player_count - dragons - knights
 
-    return {
-        Role.DRAGON: dragons,
-        Role.KNIGHT: knights,
-        Role.VILLAGER: villagers
-    }
+    return {Role.DRAGON: dragons, Role.KNIGHT: knights, Role.VILLAGER: villagers}
 
 
-def assign_roles(players: List) -> None:
+def assign_roles(players: list) -> None:
     """Randomly assign roles to players based on distribution.
 
     Modifies players in-place to set their role and knows_word attributes.
@@ -56,7 +53,6 @@ def assign_roles(players: List) -> None:
     Args:
         players: List of Player objects to assign roles to
     """
-    from .player import Player
 
     distribution = calculate_role_distribution(len(players))
 
@@ -67,6 +63,6 @@ def assign_roles(players: List) -> None:
 
     # Shuffle and assign
     random.shuffle(role_pool)
-    for player, role in zip(players, role_pool):
+    for player, role in zip(players, role_pool, strict=True):
         player.role = role.value
-        player.knows_word = (role != Role.DRAGON)
+        player.knows_word = role != Role.DRAGON

@@ -1,7 +1,7 @@
 """Player model for the game."""
-from datetime import datetime
-from typing import Optional
+
 import uuid
+from datetime import datetime
 
 
 class Player:
@@ -16,7 +16,7 @@ class Player:
         """
         self.id: str = str(uuid.uuid4())
         self.nickname: str = nickname
-        self.role: Optional[str] = None  # Will be set when game starts
+        self.role: str | None = None  # Will be set when game starts
         self.is_alive: bool = True
         self.is_host: bool = is_host
         self.knows_word: bool = False  # False for Dragon, True for others

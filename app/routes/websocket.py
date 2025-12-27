@@ -1,6 +1,8 @@
 """WebSocket routes for real-time game updates."""
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
 import json
+
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from core.game_manager import game_manager
 
@@ -50,10 +52,7 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, player_id: str)
     try:
         # Send initial state to player
         initial_state = game.get_state_for_player(player_id)
-        message = json.dumps({
-            "type": "state_update",
-            "data": initial_state
-        })
+        message = json.dumps({"type": "state_update", "data": initial_state})
         await websocket.send_text(message)
         print(f"📤 Sent initial state to {player_id}")
 

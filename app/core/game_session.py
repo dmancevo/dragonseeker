@@ -1,20 +1,20 @@
 """Game session management."""
+
+import json
+import random
 from datetime import datetime
 from enum import Enum
-from typing import Optional
-import random
-import json
-import asyncio
 
 from fastapi import WebSocket
 
+from .constants import MIN_PLAYERS, WORD_PAIRS
 from .player import Player
-from .roles import assign_roles, Role
-from .constants import WORD_PAIRS, MIN_PLAYERS
+from .roles import Role, assign_roles
 
 
 class GameState(str, Enum):
     """Game state enum."""
+
     LOBBY = "lobby"
     PLAYING = "playing"
     VOTING = "voting"
@@ -34,16 +34,16 @@ class GameSession:
         self.game_id: str = game_id
         self.players: dict[str, Player] = {}
         self.state: GameState = GameState.LOBBY
-        self.villager_word: Optional[str] = None  # Word for villagers
-        self.knight_word: Optional[str] = None    # Similar word for knights
+        self.villager_word: str | None = None  # Word for villagers
+        self.knight_word: str | None = None  # Similar word for knights
         self.created_at: datetime = datetime.now()
-        self.started_at: Optional[datetime] = None
+        self.started_at: datetime | None = None
         self.votes: dict[str, str] = {}  # voter_id -> target_id
         self.connections: dict[str, WebSocket] = {}  # player_id -> WebSocket
-        self.winner: Optional[str] = None  # "villagers" or "dragon"
-        self.dragon_guess: Optional[str] = None
-        self.eliminated_player_id: Optional[str] = None
-        self.last_elimination: Optional[dict] = None  # Stores last elimination details
+        self.winner: str | None = None  # "villagers" or "dragon"
+        self.dragon_guess: str | None = None
+        self.eliminated_player_id: str | None = None
+        self.last_elimination: dict | None = None  # Stores last elimination details
         self.player_order: list[str] = []  # Shuffled order of player IDs for turn order
 
     def add_player(self, nickname: str) -> Player:
@@ -110,7 +110,7 @@ class GameSession:
         # Select random word pair
         word_pair = random.choice(WORD_PAIRS)
         self.villager_word = word_pair[0]  # Main word for villagers
-        self.knight_word = word_pair[1]    # Similar word for knights
+        self.knight_word = word_pair[1]  # Similar word for knights
 
         # Shuffle and store player order for turn-based word saying
         player_ids = list(self.players.keys())
@@ -161,8 +161,7 @@ class GameSession:
         max_votes = max(vote_counts.values())
 
         # Get all players with max votes (for tie-breaking)
-        tied_players = [pid for pid, count in vote_counts.items()
-                        if count == max_votes]
+        tied_players = [pid for pid, count in vote_counts.items() if count == max_votes]
 
         # Random tie-breaker
         eliminated_id = random.choice(tied_players)
@@ -176,12 +175,12 @@ class GameSession:
             "eliminated_nickname": eliminated_player.nickname,
             "eliminated_role": eliminated_player.role,
             "vote_counts": dict(vote_counts),
-            "was_tie": len(tied_players) > 1
+            "was_tie": len(tied_players) > 1,
         }
 
         return self.last_elimination
 
-    def check_win_condition(self) -> Optional[str]:
+    def check_win_condition(self) -> str | None:
         """Check if game has reached a win condition.
 
         Returns:
@@ -253,7 +252,9 @@ class GameSession:
 
     async def broadcast_state(self) -> None:
         """Broadcast current game state to all connected players."""
-        print(f"📢 Broadcasting state for game {self.game_id} to {len(self.connections)} connections")
+        print(
+            f"📢 Broadcasting state for game {self.game_id} to {len(self.connections)} connections"
+        )
         print(f"   Game state: {self.state.value}")
 
         disconnected = []
@@ -261,10 +262,7 @@ class GameSession:
         for player_id, websocket in self.connections.items():
             try:
                 state = self.get_state_for_player(player_id)
-                message = json.dumps({
-                    "type": "state_update",
-                    "data": state
-                })
+                message = json.dumps({"type": "state_update", "data": state})
                 await websocket.send_text(message)
                 print(f"   ✅ Sent to {player_id}")
             except Exception as e:
