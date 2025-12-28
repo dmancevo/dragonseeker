@@ -76,7 +76,7 @@ pub async fn show_lobby(
 
     // Build share URL (use a placeholder base URL for now)
     // In production, this would use the request's base URL
-    let share_url = format!("http://localhost:8000/game/{}/join", game_id);
+    let share_url = format!("https://dragonseeker.win/game/{}/join", game_id);
 
     // Build player list for template
     let lobby_players: Vec<LobbyPlayer> = game
