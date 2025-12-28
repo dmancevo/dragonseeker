@@ -26,7 +26,7 @@ fn create_test_server() -> TestServer {
     let game_manager = Arc::new(RwLock::new(GameManager::new()));
     let env = std::env::var("ENVIRONMENT").unwrap_or_else(|_| "production".to_string());
     let public_url = if env == "development" {
-        "http://localhost:3000".to_string()
+        "http://localhost:8000".to_string()
     } else {
         "https://dragonseeker.win".to_string()
     };
