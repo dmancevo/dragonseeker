@@ -65,7 +65,10 @@ pub fn calculate_role_distribution(player_count: usize) -> Result<HashMap<Role, 
 
     tracing::debug!(
         "Role distribution for {} players: {} dragon, {} knights, {} villagers",
-        player_count, dragons, knights, villagers
+        player_count,
+        dragons,
+        knights,
+        villagers
     );
 
     let mut distribution = HashMap::new();
@@ -105,7 +108,10 @@ pub fn assign_roles(players: &mut [Player]) -> Result<(), String> {
 
     tracing::debug!(
         "Role distribution for {} players: {} dragon, {} knights, {} villagers",
-        player_count, dragons, knights, villagers
+        player_count,
+        dragons,
+        knights,
+        villagers
     );
 
     // Build role pool array directly with correct proportions

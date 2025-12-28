@@ -42,7 +42,8 @@ pub async fn websocket_handler(
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     tracing::debug!(
         "WebSocket connection attempt: game={}, player={}",
-        game_id, player_id
+        game_id,
+        player_id
     );
 
     // Authenticate player via player-specific cookie
@@ -86,7 +87,14 @@ pub async fn websocket_handler(
 
     // Upgrade to WebSocket connection
     Ok(ws.on_upgrade(move |socket| {
-        handle_socket(socket, game_id, player_id, initial_state, broadcast_rx, state)
+        handle_socket(
+            socket,
+            game_id,
+            player_id,
+            initial_state,
+            broadcast_rx,
+            state,
+        )
     }))
 }
 
@@ -132,18 +140,30 @@ async fn handle_socket(
             match broadcast_rx.recv().await {
                 Ok(broadcast_msg) => {
                     // Parse the broadcast message to check if it's an update trigger
-                    if let Ok(msg_json) = serde_json::from_str::<serde_json::Value>(&broadcast_msg) {
+                    if let Ok(msg_json) = serde_json::from_str::<serde_json::Value>(&broadcast_msg)
+                    {
                         if msg_json["type"] == "update_trigger" {
-                            tracing::info!("Player {} processing update_trigger: event={:?}", player_id_clone, msg_json["event"]);
+                            tracing::info!(
+                                "Player {} processing update_trigger: event={:?}",
+                                player_id_clone,
+                                msg_json["event"]
+                            );
                             // Fetch fresh personalized state for this player
                             let manager = state_clone.game_manager.read().await;
                             if let Some(game) = manager.get_game(&game_id_clone) {
                                 let player_state = game.get_state_for_player(&player_id_clone);
-                                tracing::info!("Sending state to player {}: state={}, role={:?}, is_alive={}",
+                                tracing::info!(
+                                    "Sending state to player {}: state={}, role={:?}, is_alive={}",
                                     player_id_clone,
-                                    player_state.get("state").and_then(|v| v.as_str()).unwrap_or("unknown"),
+                                    player_state
+                                        .get("state")
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or("unknown"),
                                     player_state.get("your_role"),
-                                    player_state.get("is_alive").and_then(|v| v.as_bool()).unwrap_or(false)
+                                    player_state
+                                        .get("is_alive")
+                                        .and_then(|v| v.as_bool())
+                                        .unwrap_or(false)
                                 );
                                 let state_msg = serde_json::json!({
                                     "type": "state_update",
@@ -151,7 +171,10 @@ async fn handle_socket(
                                 });
                                 if let Ok(msg_text) = serde_json::to_string(&state_msg) {
                                     if sender.send(Message::Text(msg_text)).await.is_err() {
-                                        tracing::warn!("Failed to send state to player={}", player_id_clone);
+                                        tracing::warn!(
+                                            "Failed to send state to player={}",
+                                            player_id_clone
+                                        );
                                         break;
                                     }
                                 }
@@ -224,7 +247,11 @@ async fn handle_socket(
         }
     }
 
-    tracing::info!("WebSocket connection closed: player={} game={}", player_id, game_id);
+    tracing::info!(
+        "WebSocket connection closed: player={} game={}",
+        player_id,
+        game_id
+    );
 }
 
 #[cfg(test)]

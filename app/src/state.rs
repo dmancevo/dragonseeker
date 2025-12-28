@@ -8,13 +8,15 @@ use tokio::sync::RwLock;
 pub struct AppState {
     pub game_manager: Arc<RwLock<GameManager>>,
     pub secret_key: String,
+    pub public_url: String,
 }
 
 impl AppState {
-    pub fn new(secret_key: String) -> Self {
+    pub fn new(secret_key: String, public_url: String) -> Self {
         Self {
             game_manager: Arc::new(RwLock::new(GameManager::new())),
             secret_key,
+            public_url,
         }
     }
 }

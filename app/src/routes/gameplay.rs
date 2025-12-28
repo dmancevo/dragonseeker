@@ -262,7 +262,8 @@ pub async fn start_voting(
         game.voting_started_at = Some(OffsetDateTime::now_utc());
         tracing::debug!(
             "Starting timer: {:?}s at {:?}",
-            game.voting_timer_seconds, game.voting_started_at
+            game.voting_timer_seconds,
+            game.voting_started_at
         );
     } else {
         tracing::debug!("No timer configured (voting_timer_seconds is None)");
@@ -417,8 +418,12 @@ pub async fn submit_vote(
         let mut headers = HeaderMap::new();
 
         let dragon_eliminated = check_dragon_eliminated(game);
-        tracing::info!("Voting complete: dragon_eliminated={}, winner={:?}, state_before={:?}",
-            dragon_eliminated, winner, game.state);
+        tracing::info!(
+            "Voting complete: dragon_eliminated={}, winner={:?}, state_before={:?}",
+            dragon_eliminated,
+            winner,
+            game.state
+        );
 
         if dragon_eliminated {
             // Transition to dragon guess state
@@ -447,8 +452,11 @@ pub async fn submit_vote(
         });
         if let Ok(msg_text) = serde_json::to_string(&broadcast_msg) {
             let send_result = game.broadcast_tx.send(msg_text);
-            tracing::info!("Broadcast voting_complete: receivers={}, state={:?}",
-                send_result.unwrap_or(0), game.state);
+            tracing::info!(
+                "Broadcast voting_complete: receivers={}, state={:?}",
+                send_result.unwrap_or(0),
+                game.state
+            );
         }
 
         return Ok((

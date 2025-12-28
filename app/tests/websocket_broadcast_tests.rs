@@ -22,9 +22,16 @@ use tower_http::{cors::CorsLayer, services::ServeDir, trace::TraceLayer};
 fn create_test_server() -> TestServer {
     let secret_key = "test_secret_key_for_websocket_tests".to_string();
     let game_manager = Arc::new(RwLock::new(GameManager::new()));
+    let env = std::env::var("ENVIRONMENT").unwrap_or_else(|_| "production".to_string());
+    let public_url = if env == "development" {
+        "http://localhost:3000".to_string()
+    } else {
+        "https://dragonseeker.win".to_string()
+    };
     let state = AppState {
         game_manager,
         secret_key,
+        public_url,
     };
 
     let cors = CorsLayer::new()
@@ -464,10 +471,7 @@ mod lobby_update_regression_tests {
         let join_body = join_response.text();
         let json: Value = serde_json::from_str(&join_body).unwrap();
 
-        assert_eq!(
-            json["is_host"], true,
-            "First player should be host"
-        );
+        assert_eq!(json["is_host"], true, "First player should be host");
 
         let player_id = json["player_id"].as_str().unwrap();
         let cookie = join_response

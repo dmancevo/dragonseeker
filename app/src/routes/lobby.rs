@@ -75,8 +75,7 @@ pub async fn show_lobby(
     let player = player.unwrap();
 
     // Build share URL (use a placeholder base URL for now)
-    // In production, this would use the request's base URL
-    let share_url = format!("https://dragonseeker.win/game/{}/join", game_id);
+    let share_url = format!("{}/game/{}/join", state.public_url, game_id);
 
     // Build player list for template
     let lobby_players: Vec<LobbyPlayer> = game
@@ -233,7 +232,8 @@ pub async fn set_timer(
 
     tracing::debug!(
         "Setting timer for game={}: {:?}s",
-        game_id, request.timer_seconds
+        game_id,
+        request.timer_seconds
     );
 
     // Set the timer

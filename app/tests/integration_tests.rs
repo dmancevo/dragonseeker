@@ -24,9 +24,16 @@ use tower_http::{cors::CorsLayer, services::ServeDir, trace::TraceLayer};
 fn create_test_server() -> TestServer {
     let secret_key = "test_secret_key_for_integration_tests".to_string();
     let game_manager = Arc::new(RwLock::new(GameManager::new()));
+    let env = std::env::var("ENVIRONMENT").unwrap_or_else(|_| "production".to_string());
+    let public_url = if env == "development" {
+        "http://localhost:3000".to_string()
+    } else {
+        "https://dragonseeker.win".to_string()
+    };
     let state = AppState {
         game_manager,
         secret_key,
+        public_url,
     };
 
     // Configure CORS exactly as in main.rs

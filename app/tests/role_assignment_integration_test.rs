@@ -71,10 +71,7 @@ mod role_assignment_integration_tests {
         );
 
         // Verify that words are assigned
-        assert!(
-            game.villager_word.is_some(),
-            "Villager word should be set"
-        );
+        assert!(game.villager_word.is_some(), "Villager word should be set");
         assert!(game.knight_word.is_some(), "Knight word should be set");
 
         // Verify that knight word is different from villager word

@@ -7,11 +7,7 @@ use rand::Rng;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower::ServiceBuilder;
-use tower_http::{
-    cors::CorsLayer,
-    services::ServeDir,
-    trace::TraceLayer,
-};
+use tower_http::{cors::CorsLayer, services::ServeDir, trace::TraceLayer};
 
 use dragonseeker::{
     core::game_manager::GameManager,
@@ -52,10 +48,20 @@ async fn main() {
     let game_manager = Arc::new(RwLock::new(GameManager::new()));
     println!("🔗 Game manager initialized");
 
+    // Set public url
+    let env = std::env::var("ENVIRONMENT").unwrap_or_else(|_| "production".to_string());
+
+    let public_url = if env != "development" {
+        "https://dragonseeker.win".to_string()
+    } else {
+        "http://localhost:8000".to_string()
+    };
+
     // Create application state
     let state = AppState {
         game_manager,
         secret_key,
+        public_url,
     };
 
     // Configure CORS
