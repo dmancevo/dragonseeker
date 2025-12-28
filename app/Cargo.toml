@@ -1,0 +1,59 @@
+[package]
+name = "dragonseeker"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "AGPL-3.0"
+authors = ["dmancevo"]
+description = "A real-time multiplayer social deduction game"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.40", features = ["full"] }
+
+# Web framework
+axum = { version = "0.7", features = ["ws", "macros"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["fs", "trace", "cors", "timeout", "compression-gzip"] }
+
+# Templating
+askama = { version = "0.12", features = ["with-axum"] }
+askama_axum = "0.4"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Authentication & Security
+hmac = "0.12"
+sha2 = "0.10"
+base64 = "0.22"
+rand = "0.8"
+
+# Time handling
+time = { version = "0.3", features = ["serde", "macros"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Utilities
+uuid = { version = "1.10", features = ["v4", "serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+once_cell = "1.20"
+futures = "0.3"
+
+# Cookie handling
+cookie = { version = "0.18", features = ["secure", "percent-encode"] }
+axum-extra = { version = "0.9", features = ["cookie", "typed-header"] }
+
+[dev-dependencies]
+tokio-test = "0.4"
+axum-test = "15.0"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true

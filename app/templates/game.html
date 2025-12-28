@@ -10,11 +10,11 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
         <span id="status-text">
-            {% if game.state.value == 'playing' %}
+            {% if state.is_playing %}
             Discussion Phase - Discuss to find the Dragon!
-            {% elif game.state.value == 'voting' %}
+            {% else if state.is_voting %}
             Voting Phase - Vote for who you think is the Dragon
-            {% elif game.state.value == 'dragon_guess' %}
+            {% else if state.is_dragon_guess %}
             Dragon is guessing the word...
             {% endif %}
         </span>
@@ -43,7 +43,8 @@
                     </div>
 
                     <div id="role-content" style="display: none;">
-                    {% if player.role == 'dragon' %}
+                    {% if player.is_dragon %}
+                    <!-- Dragon sees their role but no word -->
                     <div class="flex items-center gap-4 p-4 bg-error/10 rounded-lg border-2 border-error">
                         <div class="text-6xl">🐉</div>
                         <div>
@@ -58,34 +59,32 @@
                         <span class="text-sm">The word is: <strong>???</strong></span>
                     </div>
 
-                    {% elif player.role == 'knight' %}
-                    <div class="flex items-center gap-4 p-4 bg-success/10 rounded-lg border-2 border-success">
-                        <div class="text-6xl">🏘️</div>
-                        <div>
-                            <h3 class="text-2xl font-bold text-success">Villager</h3>
-                            <p class="text-sm">Work together to find the Dragon!</p>
-                        </div>
-                    </div>
-                    <div class="alert alert-success mt-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span class="text-sm">The secret word is: <strong class="text-lg">{{ word }}</strong></span>
-                    </div>
-
                     {% else %}
-                    <div class="flex items-center gap-4 p-4 bg-success/10 rounded-lg border-2 border-success">
-                        <div class="text-6xl">🏘️</div>
-                        <div>
-                            <h3 class="text-2xl font-bold text-success">Villager</h3>
-                            <p class="text-sm">Work together to find the Dragon!</p>
-                        </div>
-                    </div>
-                    <div class="alert alert-success mt-4">
+                    <!-- Non-dragons (knights and villagers) see ONLY their word, no role information -->
+                    <div class="alert alert-info">
                         <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        <span class="text-sm">The secret word is: <strong class="text-lg">{{ word }}</strong></span>
+                        {% match word %}
+                            {% when Some with (w) %}
+                            <div>
+                                <div class="text-sm mb-2">Your secret word is:</div>
+                                <div class="text-3xl font-bold">{{ w }}</div>
+                            </div>
+                            {% when None %}
+                            <span class="text-sm">Your secret word is: <strong class="text-lg">???</strong></span>
+                        {% endmatch %}
+                    </div>
+                    <div class="text-sm text-base-content/70 mt-4 p-4 bg-base-200 rounded-lg">
+                        <p class="mb-2">How to Play:</p>
+                        <ol class="list-decimal list-inside space-y-1">
+                            <li>Follow the turn order shown under "Turn Order"</li>
+                            <li>When it's your turn, say a word similar to your secret word</li>
+                            <li>Remember, you are not allowed to say your secret word</li>
+                            <li>Discuss with other players to find who doesn't know the word</li>
+                            <li>The Dragon doesn't know any word and will try to blend in</li>
+                            <li>Note: Knights have a different word than villagers</li>
+                        </ol>
                     </div>
                     {% endif %}
                     </div>
@@ -93,12 +92,12 @@
             </div>
 
             <!-- Host Controls -->
-            {% if player.is_host and game.state.value == 'playing' %}
+            {% if can_show_host_controls %}
             <div class="card bg-base-100 shadow-xl">
                 <div class="card-body">
                     <h3 class="card-title text-lg">Host Controls</h3>
                     <button
-                        hx-post="/api/games/{{ game.game_id }}/start-voting?player_id={{ player_id }}"
+                        hx-post="/api/games/{{ game_id }}/start-voting?player_id={{ player_id }}"
                         hx-swap="none"
                         class="btn btn-warning btn-block">
                         Start Voting Round
@@ -116,59 +115,49 @@
                     <h2 class="card-title">
                         Turn Order
                         <div class="badge badge-primary" id="alive-count">
-                            {{ game.players.values()|selectattr('is_alive')|list|length }} alive
+                            {{ alive_count }} alive
                         </div>
                     </h2>
                     <p class="text-sm text-base-content/70 mb-2">Players say their word in this order</p>
 
                     <div id="players-grid" class="space-y-2 mt-4">
-                        {% if game.player_order %}
-                            {% for player_id in game.player_order %}
-                                {% set p = game.players[player_id] %}
-                                <div class="flex items-center gap-3 p-3 rounded-lg {% if p.is_alive %}bg-base-200{% else %}bg-base-300 opacity-50{% endif %}">
-                                    <div class="avatar placeholder">
-                                        <div class="bg-primary text-primary-content rounded-full w-10">
-                                            <span>{{ p.nickname[0]|upper }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="font-semibold truncate">{{ p.nickname }}</div>
-                                        {% if not p.is_alive %}
-                                        <div class="text-xs text-error">Eliminated</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        {% else %}
-                            {% for p in game.players.values() %}
-                            <div class="flex items-center gap-3 p-3 rounded-lg {% if p.is_alive %}bg-base-200{% else %}bg-base-300 opacity-50{% endif %}">
-                                <div class="avatar placeholder">
-                                    <div class="bg-primary text-primary-content rounded-full w-10">
-                                        <span>{{ p.nickname[0]|upper }}</span>
-                                    </div>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="font-semibold truncate">{{ p.nickname }}</div>
-                                    {% if not p.is_alive %}
-                                    <div class="text-xs text-error">Eliminated</div>
-                                    {% endif %}
+                        {% for p in players %}
+                        <div class="flex items-center gap-3 p-3 rounded-lg {% if p.is_alive %}bg-base-200{% else %}bg-base-300 opacity-50{% endif %}">
+                            <div class="avatar placeholder">
+                                <div class="bg-primary text-primary-content rounded-full w-10">
+                                    <span>{{ p.first_letter }}</span>
                                 </div>
                             </div>
-                            {% endfor %}
-                        {% endif %}
+                            <div class="flex-1 min-w-0">
+                                <div class="font-semibold truncate">{{ p.nickname }}</div>
+                                {% if !p.is_alive %}
+                                <div class="text-xs text-error">Eliminated</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
 
             <!-- Voting Area (Alive Players Only) -->
-            <div id="voting-area" class="card bg-base-100 shadow-xl mt-6" style="{% if game.state.value != 'voting' or not player.is_alive %}display: none;{% endif %}">
+            <div id="voting-area" class="card bg-base-100 shadow-xl mt-6" style="display: {% if can_show_voting_area %}block{% else %}none{% endif %};">
                 <div class="card-body">
                     <h2 class="card-title">Cast Your Vote</h2>
                     <p class="text-sm text-base-content/70 mb-4">Vote for who you think is the Dragon</p>
 
-                    <!-- Timer Display - HTMX polling -->
-                    {% set game_id = game.game_id %}
-                    {% include 'partials/timer.html' %}
+                    <!-- Timer Display -->
+                    <div id="timer-container" class="mb-4">
+                        <div class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                            </svg>
+                            <span id="timer-display" class="font-mono text-lg"
+                                  hx-get="/api/games/{{ game_id }}/timer?player_id={{ player_id }}"
+                                  hx-trigger="every 1s"
+                                  hx-swap="innerHTML">--:--</span>
+                        </div>
+                    </div>
 
                     <div id="vote-buttons" class="space-y-2">
                         <!-- Vote buttons will be dynamically generated by JavaScript -->
@@ -181,7 +170,7 @@
             </div>
 
             <!-- Spectator Message (Eliminated Players) -->
-            <div id="spectator-message" class="card bg-base-100 shadow-xl mt-6" style="{% if player.is_alive %}display: none;{% endif %}">
+            <div id="spectator-message" class="card bg-base-100 shadow-xl mt-6" style="display: {% if can_show_spectator_message %}block{% else %}none{% endif %};">
                 <div class="card-body">
                     <h2 class="card-title text-error">You Were Eliminated</h2>
                     <p class="text-base-content/70">You are now spectating the game. Watch as the remaining players try to find the Dragon!</p>
@@ -195,12 +184,12 @@
             </div>
 
             <!-- Dragon Guess Area -->
-            <div id="guess-area" class="card bg-base-100 shadow-xl mt-6" style="{% if player.role != 'dragon' or game.state.value != 'dragon_guess' %}display: none;{% endif %}">
+            <div id="guess-area" class="card bg-base-100 shadow-xl mt-6" style="display: {% if can_show_guess_area %}block{% else %}none{% endif %};">
                 <div class="card-body">
                     <h2 class="card-title text-error">Final Chance!</h2>
                     <p class="text-sm mb-4">You've been eliminated. Guess the secret word to win!</p>
 
-                    <form hx-post="/api/games/{{ game.game_id }}/guess-word?player_id={{ player_id }}" hx-swap="none">
+                    <form hx-post="/api/games/{{ game_id }}/guess-word?player_id={{ player_id }}" hx-swap="none">
                         <div class="form-control">
                             <input
                                 type="text"
@@ -219,7 +208,7 @@
             </div>
 
             <!-- Waiting for Dragon Guess (Non-Dragon Players) -->
-            <div id="dragon-guessing-message" class="card bg-base-100 shadow-xl mt-6" style="{% if player.role == 'dragon' or game.state.value != 'dragon_guess' %}display: none;{% endif %}">
+            <div id="dragon-guessing-message" class="card bg-base-100 shadow-xl mt-6" style="display: {% if can_show_dragon_guessing_message %}block{% else %}none{% endif %};">
                 <div class="card-body text-center">
                     <div class="text-6xl mb-4">🐉</div>
                     <h2 class="card-title justify-center">Dragon is Guessing!</h2>
@@ -249,11 +238,11 @@ function toggleRoleVisibility() {
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Game page loaded');
-    console.log('Game ID: {{ game.game_id }}');
+    console.log('Game ID: {{ game_id }}');
     console.log('Player ID: {{ player_id }}');
 
     // Initialize native WebSocket connection
-    initGameWebSocket('{{ game.game_id }}', '{{ player_id }}');
+    initGameWebSocket('{{ game_id }}', '{{ player_id }}');
 });
 
 function updateStatusBar(state) {
@@ -264,6 +253,7 @@ function updateStatusBar(state) {
         'playing': 'Discussion Phase - Discuss to find the Dragon!',
         'voting': 'Voting Phase - Vote for who you think is the Dragon',
         'dragon_guess': 'Dragon\'s Last Chance - Guessing the word...',
+        'dragonguess': 'Dragon\'s Last Chance - Guessing the word...',
         'finished': 'Game Over!'
     };
 

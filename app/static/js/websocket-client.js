@@ -167,11 +167,20 @@ class GameWebSocket {
             const roleClass = elim.eliminated_role === 'dragon' ? 'text-error' :
                              elim.eliminated_role === 'knight' ? 'text-secondary' : 'text-success';
 
-            eliminationText.innerHTML = `
-                <strong>${elim.eliminated_nickname}</strong> was eliminated!
-                They were a <span class="${roleClass} font-bold">${roleEmoji} ${elim.eliminated_role.toUpperCase()}</span>
-                ${elim.was_tie ? ' (decided by tie-breaker)' : ''}
-            `;
+            // Different message if dragon is guessing vs truly eliminated
+            if (state.state === 'dragonguess' && elim.eliminated_role === 'dragon') {
+                eliminationText.innerHTML = `
+                    <strong>${elim.eliminated_nickname}</strong> is the <span class="${roleClass} font-bold">${roleEmoji} DRAGON</span>!
+                    They have one chance to guess the secret word...
+                    ${elim.was_tie ? ' (decided by tie-breaker)' : ''}
+                `;
+            } else {
+                eliminationText.innerHTML = `
+                    <strong>${elim.eliminated_nickname}</strong> was eliminated!
+                    They were a <span class="${roleClass} font-bold">${roleEmoji} ${elim.eliminated_role.toUpperCase()}</span>
+                    ${elim.was_tie ? ' (decided by tie-breaker)' : ''}
+                `;
+            }
             eliminationNotification.style.display = 'flex';
         } else if (eliminationNotification && !state.last_elimination) {
             // Hide notification if no elimination data
@@ -188,12 +197,14 @@ class GameWebSocket {
         const guessArea = document.getElementById('guess-area');
         const dragonGuessingMessage = document.getElementById('dragon-guessing-message');
 
-        if (state.state === 'dragon_guess') {
+        if (state.state === 'dragonguess') {
+            console.log('DRAGONGUESS STATE: your_role=' + state.your_role + ', guessArea=' + (guessArea ? 'exists' : 'NULL'));
             // Hide voting and spectator areas
             if (votingArea) votingArea.style.display = 'none';
 
             if (state.your_role === 'dragon') {
                 // Dragon sees the guess form
+                console.log('→ SHOWING GUESS FORM TO DRAGON');
                 if (guessArea) guessArea.style.display = 'block';
                 if (spectatorMessage) spectatorMessage.style.display = 'none';
                 if (dragonGuessingMessage) dragonGuessingMessage.style.display = 'none';
@@ -241,17 +252,23 @@ class GameWebSocket {
                     spectatorStatus.textContent = `Voting in progress... ${state.votes_submitted} of ${state.alive_count} players have voted`;
                 }
             }
+        } else if (state.state === 'dragonguess') {
+            // Dragon guess state - spectator message is handled in dragonguess section above
+            // Do nothing here - let the dragonguess handler control visibility
         } else {
-            // Not in voting state - hide both
+            // Not in voting or dragonguess state - hide voting area
             if (votingArea) votingArea.style.display = 'none';
-            if (spectatorMessage && state.is_alive) spectatorMessage.style.display = 'none';
 
-            // Update spectator message for eliminated players during discussion
-            if (spectatorMessage && !state.is_alive && state.state === 'playing') {
-                spectatorMessage.style.display = 'block';
-                const spectatorStatus = document.getElementById('spectator-status');
-                if (spectatorStatus) {
-                    spectatorStatus.textContent = 'Players are discussing... waiting for voting to start';
+            // Only show spectator message for eliminated players during discussion (playing state)
+            if (spectatorMessage) {
+                if (!state.is_alive && state.state === 'playing') {
+                    spectatorMessage.style.display = 'block';
+                    const spectatorStatus = document.getElementById('spectator-status');
+                    if (spectatorStatus) {
+                        spectatorStatus.textContent = 'Players are discussing... waiting for voting to start';
+                    }
+                } else {
+                    spectatorMessage.style.display = 'none';
                 }
             }
         }

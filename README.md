@@ -1,6 +1,6 @@
 # 🎮 Dragonseeker
 
-A social deduction party game built with FastAPI, HTMX, Tailwind CSS, and DaisyUI. Inspired by the classic "Mr. White" game, players must work together to identify the Dragon among them!
+A social deduction party game built with Rust, Axum, HTMX, Tailwind CSS, and DaisyUI. Players must work together to identify the Dragon among them!
 
 **🎮 [Play Now at dragonseeker.win](https://dragonseeker.win/)**
 
@@ -39,14 +39,14 @@ A social deduction party game built with FastAPI, HTMX, Tailwind CSS, and DaisyU
 
 ### Prerequisites
 
-- Python 3.13+
-- [uv](https://docs.astral.sh/uv/) package manager
+- Rust 1.75+ (install via [rustup](https://rustup.rs/))
+- Cargo (comes with Rust)
 
 ### Run Locally
 
 ```bash
 cd app
-uv run fastapi dev app.py
+cargo run
 ```
 
 Then open your browser to: **http://localhost:8000**
@@ -55,53 +55,80 @@ Then open your browser to: **http://localhost:8000**
 
 ```bash
 cd app
-uv run fastapi run app.py
+cargo build --release
+./target/release/dragonseeker
 ```
 
 ## 🏗️ Architecture
 
 ### Tech Stack
 
-- **Backend**: FastAPI 0.118.0 + WebSockets 15.0.1
+- **Backend**: Rust + Axum 0.7 + Tokio 1.40
 - **Frontend**: HTMX 2.0.4 + Tailwind CSS + DaisyUI 4.12
-- **Templates**: Jinja2 3.1.6
+- **Templates**: Askama 0.12 (compile-time Jinja2-like templates)
+- **WebSockets**: tokio-tungstenite 0.24
 - **Deployment**: Docker + Digital Ocean App Platform
-- **Package Manager**: uv (Astral)
 
 ### Project Structure
 
 ```
 app/
-├── app.py                      # Main FastAPI application
-├── core/                       # Game logic
-│   ├── constants.py           # Game settings & word list
-│   ├── player.py              # Player model
-│   ├── roles.py               # Role assignment
-│   ├── game_session.py        # Game state machine
-│   └── game_manager.py        # Multi-game coordinator
-├── routes/                     # API endpoints
-│   ├── game.py                # Create/join game
-│   ├── lobby.py               # Lobby management
-│   ├── gameplay.py            # Voting & gameplay
-│   └── websocket.py           # WebSocket handler
-├── models/                     # Pydantic models
-│   ├── requests.py            # Request DTOs
-│   └── responses.py           # Response DTOs
-├── services/                   # Business logic
-│   ├── voting.py              # Vote tallying
-│   ├── win_conditions.py      # Win detection
-│   └── game_state.py          # State transitions
-├── static/                     # Frontend assets
-│   ├── css/custom.css         # Custom styles
+├── src/
+│   ├── main.rs                # Application entry point
+│   ├── lib.rs                 # Library exports
+│   ├── state.rs               # AppState with Arc<RwLock<GameManager>>
+│   │
+│   ├── core/                  # Game logic
+│   │   ├── mod.rs
+│   │   ├── constants.rs      # Game settings & 500 word pairs
+│   │   ├── player.rs         # Player model
+│   │   ├── roles.rs          # Role assignment
+│   │   ├── game_session.rs   # Game state machine
+│   │   └── game_manager.rs   # Multi-game coordinator
+│   │
+│   ├── auth/                  # Authentication
+│   │   ├── mod.rs
+│   │   ├── token.rs          # HMAC-SHA256 tokens
+│   │   └── middleware.rs     # Auth extractor
+│   │
+│   ├── middleware/            # Web middleware
+│   │   ├── mod.rs
+│   │   ├── rate_limiter.rs   # Per-IP rate limiting
+│   │   └── security_headers.rs
+│   │
+│   ├── routes/                # HTTP handlers
+│   │   ├── mod.rs
+│   │   ├── game.rs           # Create/join game
+│   │   ├── lobby.rs          # Lobby management
+│   │   ├── gameplay.rs       # Voting & gameplay
+│   │   └── websocket.rs      # WebSocket handler
+│   │
+│   ├── services/              # Business logic
+│   │   ├── mod.rs
+│   │   ├── voting.rs         # Vote tallying
+│   │   ├── win_conditions.rs # Win detection
+│   │   └── game_state.rs     # State transitions
+│   │
+│   └── models/                # DTOs
+│       ├── mod.rs
+│       ├── requests.rs       # Request DTOs
+│       └── responses.rs      # Response DTOs
+│
+├── static/                    # Frontend assets
+│   ├── css/custom.css        # Custom styles
 │   ├── js/websocket-client.js # WebSocket manager
-│   └── js/htmx-config.js      # HTMX setup
-└── templates/                  # Jinja2 HTML
-    ├── base.html              # Base template
-    ├── index.html             # Landing page
-    ├── join.html              # Join page
-    ├── lobby.html             # Game lobby
-    ├── game.html              # Active game
-    └── results.html           # Game over
+│   └── js/htmx-config.js     # HTMX setup
+│
+├── templates/                 # HTML templates
+│   ├── base.html             # Base template
+│   ├── index.html            # Landing page
+│   ├── join.html             # Join page
+│   ├── lobby.html            # Game lobby
+│   ├── game.html             # Active game
+│   └── results.html          # Game over
+│
+├── Cargo.toml                 # Project manifest
+└── Cargo.lock                 # Dependency lock
 ```
 
 ### Game State Machine
@@ -167,69 +194,65 @@ The app is configured for automatic deployment:
 
 ## 🧪 Development & Testing
 
-This project uses modern Python development tools for testing, linting, and type checking.
+This project uses Rust's built-in development tools for testing, linting, and type checking.
 
-### Install Development Dependencies
+### Development Dependencies
 
-```bash
-cd app
-uv sync --group dev
-```
-
-This installs:
-- **pytest** - Testing framework with async support
-- **ruff** - Fast linter and code formatter
-- **ty** - Fast type checker by Astral (makers of Ruff)
+All development dependencies are managed through Cargo and are automatically installed when you build the project.
 
 ### Running Tests
 
-Run all tests with pytest:
+Run all tests with cargo:
 
 ```bash
 cd app
-uv run pytest           # Run all tests
-uv run pytest -v        # Verbose output
-uv run pytest -v -s     # Verbose with print statements
+cargo test              # Run all tests
+cargo test -- --nocapture  # Show output
+cargo test -- --test-threads=1  # Sequential execution
 ```
 
-The test suite includes 31 tests covering:
-- Voting logic (`tests/services/test_voting.py`)
-- Win conditions (`tests/services/test_win_conditions.py`)
-- Game state transitions (`tests/services/test_game_state.py`)
+The test suite includes 119 tests covering:
+- Core game logic (player, roles, game session, game manager)
+- Authentication and middleware (HMAC tokens, rate limiting, security headers)
+- Business logic (voting, win conditions, game state transitions)
+- Route handlers and models
 
 ### Code Formatting
 
-Format code with ruff:
+Format code with cargo fmt:
 
 ```bash
 cd app
-uv run ruff format .    # Format all Python files
+cargo fmt              # Format all Rust files
+cargo fmt --check      # Check if formatted
 ```
 
 ### Linting
 
-Check code quality with ruff:
+Check code quality with clippy:
 
 ```bash
 cd app
-uv run ruff check .           # Check for issues
-uv run ruff check --fix .     # Auto-fix issues
+cargo clippy                    # Check for issues
+cargo clippy -- -D warnings     # Treat warnings as errors
+cargo fix                       # Auto-fix issues
 ```
 
-Ruff checks for:
-- Code style (pycodestyle)
-- Common bugs (flake8-bugbear)
-- Import sorting (isort)
-- Modern Python syntax (pyupgrade)
-- Async best practices (proper cleanup, unclosed clients)
+Clippy checks for:
+- Common bugs and anti-patterns
+- Performance issues
+- Idiomatic Rust patterns
+- Unsafe code usage
+- Documentation quality
 
 ### Type Checking
 
-Run type checking with ty:
+Rust has compile-time type checking built-in. Simply run:
 
 ```bash
 cd app
-uv run ty check .       # Check for type errors
+cargo check      # Check for type errors
+cargo build      # Full compilation check
 ```
 
 ### Pre-commit Workflow
@@ -238,33 +261,55 @@ Before committing code, run:
 
 ```bash
 cd app
-uv run ruff format .      # Format code
-uv run ruff check --fix . # Fix linting issues
-uv run pytest             # Run tests
-uv run ty check .         # Check types
+cargo fmt --check         # Verify formatting
+cargo clippy -- -D warnings  # Check for issues
+cargo test                # Run all tests
+cargo build --release     # Verify release build
+```
+
+### Logging
+
+The server uses structured logging with different verbosity levels:
+
+**Production (default)**: Only warnings and errors are logged
+```bash
+cargo run --release
+```
+
+**Development**: Enable verbose debug logging
+```bash
+ENVIRONMENT=development cargo run
+```
+
+You can also override the log level with the `RUST_LOG` environment variable:
+```bash
+RUST_LOG=debug cargo run        # Debug logs
+RUST_LOG=info cargo run         # Info logs
+RUST_LOG=warn cargo run         # Warn logs (production default)
 ```
 
 ## 🎨 Customization
 
 ### Adding Custom Words
 
-Edit `app/core/constants.py` to add or modify the word list:
+Edit `app/src/core/constants.rs` to add or modify the word pairs:
 
-```python
-WORD_LIST = [
-    "elephant", "giraffe", "telescope",
-    # Add your words here...
-]
+```rust
+pub const WORD_PAIRS: &[(&str, &str)] = &[
+    ("elephant", "mammoth"),
+    ("telescope", "binoculars"),
+    // Add your word pairs here...
+];
 ```
 
 ### Changing Game Settings
 
-Modify `app/core/constants.py`:
+Modify `app/src/core/constants.rs`:
 
-```python
-MIN_PLAYERS = 3          # Minimum players to start
-MAX_PLAYERS = 12         # Maximum players allowed
-GAME_TTL_SECONDS = 3600  # Game cleanup time (1 hour)
+```rust
+pub const MIN_PLAYERS: usize = 3;       // Minimum players to start
+pub const MAX_PLAYERS: usize = 12;      // Maximum players allowed
+pub const GAME_TTL_SECONDS: u64 = 3600; // Game cleanup time (1 hour)
 ```
 
 ## 🎯 Future Enhancements
@@ -301,7 +346,7 @@ Or run locally by starting the server and visiting http://localhost:8000:
 
 ```bash
 cd app
-uv run fastapi dev app.py
+cargo run
 ```
 
 Enjoy the game! 🐉⚔️🏘️

@@ -1,8 +1,9 @@
-name: DigitalOceanFastAPITemplateApp
+name: Dragonseeker
 services:
 - dockerfile_path: Dockerfile
   github:
     branch: main
     deploy_on_push: true
-    repo: dmancevo/DigitalOceanFastAPITemplateApp
-  name: DigitalOceanFastAPITemplateApp
+    repo: dmancevo/dragonseeker
+  name: dragonseeker
+  http_port: 8000

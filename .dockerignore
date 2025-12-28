@@ -1,0 +1,34 @@
+# Rust build artifacts
+target/
+**/*.rs.bk
+*.pdb
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Python artifacts (legacy)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Documentation
+README.md
+CLAUDE.md
+LICENSE.md
+
+# CI/CD
+.github/
+
+# Misc
+.DS_Store
+*.log

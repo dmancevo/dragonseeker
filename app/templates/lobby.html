@@ -31,15 +31,15 @@
         <div class="card-body">
             <h2 class="card-title">
                 Players
-                <div class="badge badge-primary" id="player-count">{{ game.players|length }}</div>
+                <div class="badge badge-primary" id="player-count">{{ players.len() }}</div>
             </h2>
 
             <div id="player-list" class="space-y-2 mt-4">
-                {% for p in game.players.values() %}
+                {% for p in players %}
                 <div class="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
                     <div class="avatar placeholder">
                         <div class="bg-primary text-primary-content rounded-full w-12">
-                            <span class="text-xl">{{ p.nickname[0]|upper }}</span>
+                            <span class="text-xl">{{ p.first_letter }}</span>
                         </div>
                     </div>
                     <div class="flex-1">
@@ -52,7 +52,7 @@
                 {% endfor %}
             </div>
 
-            <div id="min-players-warning" class="alert alert-warning mt-4" {% if game.players|length >= min_players %}style="display: none;"{% endif %}>
+            <div id="min-players-warning" class="alert alert-warning mt-4" {% if players.len() >= min_players %}style="display: none;"{% endif %}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
@@ -97,10 +97,10 @@
             <div class="card-actions justify-end mt-4">
                 <button
                     id="start-game-btn"
-                    hx-post="/api/games/{{ game.game_id }}/start?player_id={{ player_id }}"
+                    hx-post="/api/games/{{ game_id }}/start?player_id={{ player_id }}"
                     hx-swap="none"
                     class="btn btn-success btn-lg btn-block"
-                    {% if game.players|length < min_players %}disabled{% endif %}>
+                    {% if players.len() < min_players %}disabled{% endif %}>
                     Start Game
                 </button>
             </div>
@@ -119,11 +119,11 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Lobby page loaded');
-    console.log('Game ID: {{ game.game_id }}');
+    console.log('Game ID: {{ game_id }}');
     console.log('Player ID: {{ player_id }}');
 
     // Initialize native WebSocket connection
-    initGameWebSocket('{{ game.game_id }}', '{{ player_id }}');
+    initGameWebSocket('{{ game_id }}', '{{ player_id }}');
 });
 
 function copyShareLink() {
@@ -147,7 +147,7 @@ function updateTimerSetting() {
     const value = select.value;
     const timerSeconds = value ? parseInt(value) : null;
 
-    const gameId = '{{ game.game_id }}';
+    const gameId = '{{ game_id }}';
     const playerId = '{{ player_id }}';
 
     fetch(`/api/games/${gameId}/set-timer?player_id=${playerId}`, {

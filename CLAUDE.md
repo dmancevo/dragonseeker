@@ -4,59 +4,78 @@ This document provides context for AI assistants working on the Dragonseeker cod
 
 ## Project Overview
 
-**Dragonseeker** is a real-time multiplayer social deduction game built with FastAPI, HTMX, Tailwind CSS, and DaisyUI.
+**Dragonseeker** is a real-time multiplayer social deduction game built with Rust, Axum, HTMX, Tailwind CSS, and DaisyUI.
 
 ### Tech Stack
 
-- **Backend**: FastAPI 0.118.0 + WebSockets
+- **Backend**: Axum 0.7 + Tokio 1.40
 - **Frontend**: HTMX 2.0.4 + Tailwind CSS + DaisyUI 4.12
-- **Templates**: Jinja2 3.1.6
-- **Package Manager**: uv (Astral)
-- **Testing**: pytest + pytest-asyncio
-- **Linting**: ruff (formatting + linting)
-- **Type Checking**: ty (by Astral)
+- **Templates**: Askama 0.12 (compile-time Jinja2-like templates)
+- **WebSockets**: tokio-tungstenite 0.24
+- **Package Manager**: Cargo
+- **Testing**: cargo test
+- **Linting**: cargo clippy
+- **Formatting**: cargo fmt
 
 ## Project Structure
 
 ```
 app/
-├── app.py                      # Main FastAPI application with lifespan events
-├── pyproject.toml             # Project dependencies and tool configuration
-├── core/                      # Core game logic
-│   ├── constants.py          # Game settings, MIN_PLAYERS=3, MAX_PLAYERS=12, WORD_PAIRS
-│   ├── player.py             # Player model with id, nickname, role, is_alive, is_host
-│   ├── roles.py              # Role assignment logic (DRAGON, KNIGHT, VILLAGER)
-│   ├── game_session.py       # Game state machine (LOBBY → PLAYING → VOTING → DRAGON_GUESS → FINISHED)
-│   └── game_manager.py       # Multi-game coordinator singleton
-├── routes/                    # API endpoints (all use Response | None = None for HTMX redirects)
-│   ├── game.py               # Create/join game
-│   ├── lobby.py              # Lobby management and game start
-│   ├── gameplay.py           # Voting, word guessing, game logic
-│   └── websocket.py          # WebSocket handler for real-time updates
-├── models/                    # Pydantic models
-│   ├── requests.py           # Request DTOs
-│   └── responses.py          # Response DTOs
-├── services/                  # Business logic helpers
-│   ├── voting.py             # Vote validation and tallying
-│   ├── win_conditions.py     # Win detection logic
-│   └── game_state.py         # State transition helpers
-├── static/                    # Frontend assets
-│   ├── css/custom.css
-│   ├── js/websocket-client.js
-│   └── js/htmx-config.js
-├── templates/                 # Jinja2 HTML templates
-│   ├── base.html
-│   ├── index.html            # Landing page
-│   ├── join.html             # Join page
-│   ├── lobby.html            # Game lobby
-│   ├── game.html             # Active game
-│   └── results.html          # Game over
-└── tests/                     # Test suite (31 tests)
-    ├── conftest.py           # Pytest fixtures
-    └── services/             # Service tests
-        ├── test_voting.py
-        ├── test_win_conditions.py
-        └── test_game_state.py
+├── Cargo.toml                 # Project manifest and dependencies
+├── Cargo.lock                 # Dependency lock file
+├── src/
+│   ├── main.rs               # Application entry point
+│   ├── lib.rs                # Library exports for testing
+│   ├── state.rs              # Shared AppState with Arc<RwLock<GameManager>>
+│   │
+│   ├── core/                 # Core game logic
+│   │   ├── mod.rs
+│   │   ├── constants.rs     # Game settings, MIN_PLAYERS=3, MAX_PLAYERS=12, 500 WORD_PAIRS
+│   │   ├── player.rs        # Player model with id, nickname, role, is_alive, is_host
+│   │   ├── roles.rs         # Role assignment logic (Dragon, Knight, Villager)
+│   │   ├── game_session.rs  # Game state machine (Lobby → Playing → Voting → DragonGuess → Finished)
+│   │   └── game_manager.rs  # Multi-game coordinator
+│   │
+│   ├── auth/                 # Authentication
+│   │   ├── mod.rs
+│   │   ├── token.rs         # HMAC-SHA256 token generation/verification
+│   │   └── middleware.rs    # Axum extractor for authenticated routes
+│   │
+│   ├── middleware/           # Web middleware
+│   │   ├── mod.rs
+│   │   ├── rate_limiter.rs  # Per-IP rate limiting with sliding window
+│   │   └── security_headers.rs # CSP, X-Frame-Options, HSTS headers
+│   │
+│   ├── routes/               # HTTP handlers
+│   │   ├── mod.rs
+│   │   ├── game.rs          # Create/join game endpoints
+│   │   ├── lobby.rs         # Lobby management and game start
+│   │   ├── gameplay.rs      # Voting, word guessing, game logic
+│   │   └── websocket.rs     # WebSocket handler for real-time updates
+│   │
+│   ├── models/               # DTOs (Data Transfer Objects)
+│   │   ├── mod.rs
+│   │   ├── requests.rs      # Request body structures
+│   │   └── responses.rs     # Response body structures
+│   │
+│   └── services/             # Business logic helpers
+│       ├── mod.rs
+│       ├── voting.rs        # Vote validation and tallying
+│       ├── win_conditions.rs # Win detection logic
+│       └── game_state.rs    # State transition helpers
+│
+├── static/                   # Frontend assets
+│   ├── css/custom.css       # Custom styles
+│   ├── js/websocket-client.js # WebSocket manager
+│   └── js/htmx-config.js    # HTMX configuration
+│
+└── templates/                # Askama HTML templates
+    ├── base.html            # Base template
+    ├── index.html           # Landing page
+    ├── join.html            # Join page
+    ├── lobby.html           # Game lobby
+    ├── game.html            # Active game
+    └── results.html         # Game over
 ```
 
 ## Key Concepts
@@ -80,13 +99,13 @@ app/
 ### Game State Machine
 
 ```
-LOBBY → (host starts) → PLAYING → (host initiates voting) → VOTING
+Lobby → (host starts) → Playing → (host initiates voting) → Voting
   ↓                                                            ↓
   ↓ (players vote)                                             ↓
   ↓                                                            ↓
-  → DRAGON_GUESS (if dragon eliminated) → FINISHED
-  → FINISHED (if dragon survives with ≤2 players)
-  → PLAYING (if game continues)
+  → DragonGuess (if dragon eliminated) → Finished
+  → Finished (if dragon survives with ≤2 players)
+  → Playing (if game continues)
 ```
 
 ### Win Conditions
@@ -102,34 +121,35 @@ LOBBY → (host starts) → PLAYING → (host initiates voting) → VOTING
 
 ```bash
 cd app
-uv sync --group dev  # Install all dependencies including dev tools
+cargo build
 ```
 
 ### Running the Server
 
 ```bash
 cd app
-uv run fastapi dev app.py    # Development mode (hot reload)
-uv run fastapi run app.py    # Production mode
+cargo run              # Development mode
+cargo run --release    # Production mode (optimized)
 ```
 
 ### Testing
 
 ```bash
 cd app
-uv run pytest              # Run all tests
-uv run pytest -v           # Verbose output
-uv run pytest -v -s        # Verbose with print statements
+cargo test                      # Run all tests
+cargo test -- --nocapture       # Show output
+cargo test -- --test-threads=1  # Sequential execution
 ```
 
 ### Code Quality
 
 ```bash
 cd app
-uv run ruff format .       # Format code
-uv run ruff check .        # Check for issues
-uv run ruff check --fix .  # Auto-fix issues
-uv run ty check .          # Type checking
+cargo fmt                   # Format code
+cargo fmt --check           # Check if formatted
+cargo clippy                # Check for issues
+cargo clippy -- -D warnings # Treat warnings as errors
+cargo fix                   # Auto-fix issues
 ```
 
 ### Pre-commit Checklist
@@ -137,170 +157,235 @@ uv run ty check .          # Type checking
 Before committing, always run:
 ```bash
 cd app
-uv run ruff format .
-uv run ruff check --fix .
-uv run pytest
-uv run ty check .
+cargo fmt --check
+cargo clippy -- -D warnings
+cargo test
+cargo build --release
 ```
 
 All commands should pass with no errors.
 
 ## Important Patterns
 
-### 1. Response Parameter Pattern
+### 1. Shared State Pattern
 
-All HTMX endpoints use `Response | None = None` for redirect headers:
+All routes use shared `AppState` with `Arc<RwLock<GameManager>>`:
 
-```python
-async def endpoint(response: Response | None = None):
-    # ... logic ...
-    if response:
-        response.headers["HX-Redirect"] = f"/game/{game_id}/page"
-    return {"status": "success"}
+```rust
+#[derive(Clone)]
+pub struct AppState {
+    pub game_manager: Arc<RwLock<GameManager>>,
+    pub secret_key: String,
+}
+
+// In routes:
+async fn handler(State(state): State<AppState>) {
+    let manager = state.game_manager.read().await;
+    let game = manager.get_game(&game_id)?;
+    // Use read lock for queries
+    drop(manager);
+
+    let mut manager = state.game_manager.write().await;
+    let game = manager.get_game_mut(&game_id)?;
+    // Use write lock for mutations
+}
 ```
 
-### 2. Exception Handling
+### 2. WebSocket Broadcasting
 
-Always use proper exception chaining:
+Game state updates are broadcast via `tokio::sync::broadcast` channel:
 
-```python
-try:
-    game.some_operation()
-except ValueError as e:
-    raise HTTPException(status_code=400, detail=str(e)) from e
+```rust
+// In GameSession:
+pub broadcast_tx: broadcast::Sender<String>
+
+// In routes (after state change):
+let state_json = serde_json::to_string(&game.get_state_for_player(&player_id))?;
+let _ = game.broadcast_tx.send(state_json);
+
+// In WebSocket handler:
+let mut rx = game.broadcast_tx.subscribe();
+while let Ok(msg) = rx.recv().await {
+    sender.send(Message::Text(msg)).await?;
+}
 ```
 
-### 3. WebSocket Broadcasting
+### 3. Authentication Pattern
 
-Game state updates are broadcast via WebSocket:
+Player-specific cookies with HMAC-SHA256 tokens:
 
-```python
-await game.broadcast_state()
+```rust
+use crate::auth::middleware::AuthenticatedPlayer;
+
+async fn protected_route(
+    State(state): State<AppState>,
+    auth: AuthenticatedPlayer,  // Automatically extracts and verifies token
+) {
+    // Token is verified, auth.game_id and auth.player_id are available
+    auth.verify_matches(&game_id, &player_id)?;
+}
 ```
 
-Each player receives a personalized state based on their role.
+### 4. HTMX Redirect Headers
 
-### 4. Game Session Access
+Routes return `HX-Redirect` headers for client-side navigation:
 
-Always retrieve games through the singleton:
+```rust
+let mut headers = HeaderMap::new();
+headers.insert(
+    "HX-Redirect",
+    format!("/game/{}/lobby?player_id={}", game_id, player_id)
+        .parse()
+        .unwrap(),
+);
 
-```python
-from core.game_manager import game_manager
-
-game = game_manager.get_game(game_id)
-if not game:
-    raise HTTPException(status_code=404, detail="Game not found")
+Ok((headers, Json(response)))
 ```
 
-### 5. Type Safety
+### 5. Error Handling
 
-- Use `str | None` instead of `Optional[str]` (modern Python 3.10+ syntax)
-- Use `strict=True` with `zip()` for safety
-- Add null checks before accessing potentially None values
+Use `Result<impl IntoResponse, (StatusCode, String)>` for route handlers:
+
+```rust
+async fn handler(...) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let game = manager.get_game(&game_id)
+        .ok_or((StatusCode::NOT_FOUND, "Game not found".to_string()))?;
+
+    game.start_game()
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    Ok(Json(response))
+}
+```
 
 ## Common Tasks
 
 ### Adding a New Word Pair
 
-Edit `app/core/constants.py`:
+Edit `app/src/core/constants.rs`:
 
-```python
-WORD_PAIRS = [
-    ("elephant", "mammoth"),  # (villager_word, knight_word)
-    # Add new pairs here
-]
+```rust
+pub const WORD_PAIRS: &[(&str, &str)] = &[
+    ("elephant", "mammoth"),  // (villager_word, knight_word)
+    // Add new pairs here
+];
 ```
 
 ### Adding a New Test
 
-1. Create test file in `tests/services/`
-2. Import fixtures from `conftest.py`
-3. Use class-based organization: `class TestFeatureName:`
-4. Name test methods: `test_description_of_behavior`
+1. Add test in appropriate module with `#[cfg(test)]`
+2. Use `#[tokio::test]` for async tests
+3. Follow Arrange-Act-Assert pattern
 
 Example:
-```python
-class TestMyFeature:
-    def test_feature_works(self, started_game):
-        # Arrange
-        player = list(started_game.players.values())[0]
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-        # Act
-        result = my_feature(started_game, player.id)
+    #[test]
+    fn test_feature_works() {
+        // Arrange
+        let game = GameSession::new("test123".to_string());
 
-        # Assert
-        assert result is True
+        // Act
+        let result = game.some_operation();
+
+        // Assert
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_async_feature() {
+        // Async test
+    }
+}
 ```
 
 ### Adding a New Route
 
-1. Create endpoint in appropriate router file (`routes/`)
-2. Use proper type annotations
-3. Add null checks for `Response` if using HTMX redirects
-4. Handle exceptions with proper chaining
+1. Create handler function in appropriate router file (`routes/`)
+2. Use proper type annotations with `Result<impl IntoResponse, (StatusCode, String)>`
+3. Add authentication if needed with `AuthenticatedPlayer` extractor
+4. Handle errors with proper status codes
 5. Broadcast state updates if game state changes
+6. Register route in `src/main.rs`:
+
+```rust
+let app = Router::new()
+    .route("/api/games/:game_id/new-endpoint", post(routes::handler))
+    .with_state(state);
+```
 
 ## Configuration Files
 
-### pyproject.toml
+### Cargo.toml
 
 Contains:
-- Project metadata and dependencies
-- Dev dependency group (pytest, ruff, ty)
-- pytest configuration (testpaths, asyncio settings)
-- ruff configuration (line-length=100, lint rules, format settings)
+- Project metadata
+- Dependencies (axum, tokio, askama, etc.)
+- Dev dependencies (tokio-test, axum-test)
+- Build configuration
 
-Key ruff lint rules:
-- `E`, `W`: pycodestyle errors and warnings
-- `F`: pyflakes
-- `I`: isort (import sorting)
-- `B`: flake8-bugbear (common bugs)
-- `C4`: flake8-comprehensions
-- `UP`: pyupgrade (modern Python syntax)
-- `ASYNC`: async best practices (proper cleanup, unclosed clients)
+Key dependencies:
+- `tokio = { version = "1.40", features = ["full"] }` - Async runtime
+- `axum = { version = "0.7", features = ["ws", "macros"] }` - Web framework
+- `askama = { version = "0.12", features = ["with-axum"] }` - Templates
+- `time = { version = "0.3", features = ["serde", "macros"] }` - Time handling (NOT chrono)
+- `hmac = "0.12"` and `sha2 = "0.10"` - Authentication
+- `serde = { version = "1.0", features = ["derive"] }` - Serialization
 
 ## Testing Strategy
 
-### Test Fixtures (conftest.py)
-
-- `game_session`: Empty game session
-- `game_with_players`: Game with 5 players in lobby
-- `started_game`: Game that has started (roles assigned)
-- `voting_game`: Game in voting state
-- `sample_player`: Single player instance
-
 ### Test Organization
 
-- Tests are organized by service/module
-- Each test class focuses on one function or feature
-- Tests follow Arrange-Act-Assert pattern
-- All async code is automatically handled by pytest-asyncio
+- Unit tests in `#[cfg(test)]` modules within source files
+- Tests cover 119 test cases across all modules
+- All async code uses `#[tokio::test]` attribute
+
+### Test Coverage Areas
+
+- **Core logic**: Player, Roles, GameSession, GameManager (37 tests)
+- **Authentication**: Token generation, verification, middleware (5 tests)
+- **Middleware**: Rate limiting, security headers (12 tests)
+- **Services**: Voting, win conditions, game state (27 tests)
+- **Models**: Request/response DTOs (15 tests)
+- **Routes**: Handler function tests (23 tests)
 
 ## Code Conventions
 
-1. **Docstrings**: All functions have docstrings with Args and Returns
-2. **Type Hints**: All parameters and return types are annotated
-3. **Line Length**: Maximum 100 characters (enforced by ruff)
-4. **Imports**: Auto-sorted by ruff (stdlib, third-party, local)
-5. **String Quotes**: Double quotes (enforced by ruff)
-6. **Indentation**: 4 spaces (no tabs)
+1. **Documentation**: All public functions have doc comments with `///`
+2. **Type Annotations**: Explicit types on function signatures
+3. **Error Handling**: Use `Result` with proper error types
+4. **Naming**: snake_case for functions/variables, PascalCase for types
+5. **Formatting**: 4 spaces indentation, enforced by `cargo fmt`
+6. **Imports**: Organized by std, external crates, local modules
 
 ## Common Pitfalls
 
-1. **Don't forget to broadcast state**: After game state changes, always call `await game.broadcast_state()`
+1. **Don't forget to broadcast state**: After game state changes, always broadcast updates
 2. **Check game state**: Validate game is in correct state before operations
 3. **Validate player permissions**: Check if player is host, alive, etc.
-4. **Null checks**: Always check if `game.villager_word`, `game.knight_word` exist before using
-5. **Type ignore comments**: Only use for known limitations (e.g., CORSMiddleware typing)
+4. **Null checks**: Always check `Option` values before unwrapping
+5. **Lock management**: Don't hold read/write locks longer than necessary
+6. **WebSocket storage**: Never store WebSocket connections in GameSession - use broadcast channel
+7. **Time crate**: Use `time` crate, NOT `chrono` (security vulnerability in chrono)
 
 ## Deployment
 
 ### Docker
 
+Multi-stage build for optimized production image:
+
 ```bash
 docker build -t dragonseeker .
 docker run -p 8000:8000 dragonseeker
 ```
+
+The Dockerfile:
+- Stage 1: Builds Rust binary with rust:1.83-alpine
+- Stage 2: Copies binary to minimal alpine:3.21 runtime image
+- Final image size: ~20MB (vs ~50-100MB Python)
 
 ### Digital Ocean App Platform
 
@@ -311,39 +396,64 @@ docker run -p 8000:8000 dragonseeker
 ## Useful Commands
 
 ```bash
-# Find all TODO comments
-grep -r "TODO" app/
+# Run server in development mode
+cargo run
 
-# Check test coverage
-uv run pytest --cov=. --cov-report=html
-
-# Run specific test file
-uv run pytest tests/services/test_voting.py -v
+# Run server in release mode (optimized)
+cargo run --release
 
 # Run specific test
-uv run pytest tests/services/test_voting.py::TestCanVote::test_can_vote_in_voting_phase -v
+cargo test test_name
 
-# Format a single file
-uv run ruff format app/routes/game.py
+# Run tests with output
+cargo test -- --nocapture
 
-# Check a single file
-uv run ruff check app/routes/game.py
+# Check code without building
+cargo check
+
+# Build release binary
+cargo build --release
+
+# Format code
+cargo fmt
+
+# Check if code is formatted
+cargo fmt --check
+
+# Lint code
+cargo clippy
+
+# Auto-fix lint issues
+cargo fix
+
+# Run security audit
+cargo audit
+
+# Update dependencies
+cargo update
+
+# Generate documentation
+cargo doc --open
 ```
 
 ## Resources
 
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Axum Documentation](https://docs.rs/axum/)
+- [Tokio Documentation](https://docs.rs/tokio/)
+- [Askama Documentation](https://docs.rs/askama/)
 - [HTMX Documentation](https://htmx.org/)
-- [Ruff Documentation](https://docs.astral.sh/ruff/)
-- [pytest Documentation](https://docs.pytest.org/)
-- [uv Documentation](https://docs.astral.sh/uv/)
+- [The Rust Book](https://doc.rust-lang.org/book/)
+- [Rust By Example](https://doc.rust-lang.org/rust-by-example/)
 
 ## Notes for AI Assistants
 
 - Always run tests after making changes
-- Use the existing fixtures in `conftest.py` for tests
-- Follow the type annotation patterns established in the codebase
-- Check that all tools pass before considering work complete
+- Use existing test patterns from `#[cfg(test)]` modules
+- Follow Rust naming conventions (snake_case, not camelCase)
+- Check that all quality tools pass before considering work complete
 - When adding features, update tests to maintain coverage
 - Preserve HTMX patterns for frontend interactivity
 - Remember that WebSocket updates are crucial for real-time gameplay
+- Use `Arc<RwLock<T>>` for shared mutable state, not global statics
+- Prefer `?` operator over `.unwrap()` in route handlers
+- Always use `time` crate instead of `chrono` for date/time operations
