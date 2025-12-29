@@ -279,11 +279,11 @@ function updatePlayersGrid(players, playerOrder) {
         <div class="flex items-center gap-3 p-3 rounded-lg ${p.is_alive ? 'bg-base-200' : 'bg-base-300 opacity-50'}">
             <div class="avatar placeholder">
                 <div class="bg-primary text-primary-content rounded-full w-10">
-                    <span>${p.nickname[0].toUpperCase()}</span>
+                    <span>${escapeHtml(p.nickname[0].toUpperCase())}</span>
                 </div>
             </div>
             <div class="flex-1 min-w-0">
-                <div class="font-semibold truncate">${p.nickname}</div>
+                <div class="font-semibold truncate">${escapeHtml(p.nickname)}</div>
                 ${!p.is_alive ? '<div class="text-xs text-error">Eliminated</div>' : ''}
             </div>
         </div>
@@ -303,15 +303,15 @@ function updateVoteButtons(players, gameId, yourId) {
     }
 
     voteButtons.innerHTML = votablePlayers.map(p => `
-        <form hx-post="/api/games/${gameId}/vote?player_id=${yourId}" hx-swap="none">
-            <input type="hidden" name="target_id" value="${p.id}">
+        <form hx-post="/api/games/${escapeHtml(gameId)}/vote?player_id=${escapeHtml(yourId)}" hx-swap="none">
+            <input type="hidden" name="target_id" value="${escapeHtml(p.id)}">
             <button type="submit" class="btn btn-outline btn-error btn-block justify-start">
                 <span class="avatar placeholder">
                     <div class="bg-primary text-primary-content rounded-full w-8">
-                        <span class="text-sm">${p.nickname[0].toUpperCase()}</span>
+                        <span class="text-sm">${escapeHtml(p.nickname[0].toUpperCase())}</span>
                     </div>
                 </span>
-                Vote for ${p.nickname}
+                Vote for ${escapeHtml(p.nickname)}
             </button>
         </form>
     `).join('');
