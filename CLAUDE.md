@@ -124,6 +124,32 @@ cd app
 cargo build
 ```
 
+#### Environment Variables
+
+Create a `.env` file in the project root for local development:
+
+```bash
+# Generate a cryptographically secure secret key
+openssl rand -hex 32
+
+# Create .env file with the generated secret
+cat > .env << EOF
+# Environment configuration for local development
+# DO NOT COMMIT THIS FILE - It contains sensitive secrets
+
+# Secret key for HMAC token signing (64 hex characters)
+# Generated with: openssl rand -hex 32
+SECRET=<paste-your-generated-secret-here>
+
+# Environment mode
+ENVIRONMENT=development
+EOF
+```
+
+**Note**: The `.env` file is already in `.gitignore` and will not be committed.
+
+**For Production (Digital Ocean)**: Set the `SECRET` environment variable in your app settings with the same format.
+
 ### Running the Server
 
 ```bash

@@ -18,6 +18,10 @@ use dragonseeker::{
 
 #[tokio::main]
 async fn main() {
+    // Load .env file if it exists (for local development convenience)
+    // This does nothing in production where env vars are set directly
+    dotenvy::dotenv().ok();
+
     // Initialize tracing
     // Default to WARN level for production (shows warnings and errors only)
     // Set ENVIRONMENT=development to enable DEBUG logs
@@ -35,14 +39,38 @@ async fn main() {
 
     println!("🐉 Dragonseeker game server starting...");
 
-    // Generate secret key for token signing (64 hex characters = 32 bytes)
-    let secret_key: String = rand::thread_rng()
-        .sample_iter(rand::distributions::Alphanumeric)
-        .take(64)
-        .map(char::from)
-        .collect();
+    // Get secret key from SECRET environment variable
+    let secret_key = std::env::var("SECRET").unwrap_or_else(|_| {
+        let env = std::env::var("ENVIRONMENT").unwrap_or_else(|_| "production".to_string());
 
-    println!("🔐 Generated secret key for token signing");
+        if env == "development" {
+            eprintln!("⚠️  WARNING: No SECRET environment variable found!");
+            eprintln!("    Generating temporary secret key (sessions will reset on restart)");
+            eprintln!("    For persistence, add to .env file:");
+            eprintln!("    SECRET=$(openssl rand -hex 32)");
+
+            rand::thread_rng()
+                .sample_iter(rand::distributions::Alphanumeric)
+                .take(64)
+                .map(char::from)
+                .collect()
+        } else {
+            panic!(
+                "SECRET environment variable is required in production!\n\
+                 Generate one with: openssl rand -hex 32\n\
+                 Then set it in Digital Ocean App Platform environment variables."
+            );
+        }
+    });
+
+    println!(
+        "🔐 Secret key loaded from {}",
+        if std::env::var("SECRET").is_ok() {
+            "environment"
+        } else {
+            "temporary generation (development only)"
+        }
+    );
 
     // Initialize game manager
     let game_manager = Arc::new(RwLock::new(GameManager::new()));
