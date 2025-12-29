@@ -39,13 +39,16 @@ impl GameManager {
         game_id
     }
 
-    /// Generate a URL-safe random game ID
+    /// Generate a cryptographically secure URL-safe random game ID
     ///
-    /// Equivalent to Python's secrets.token_urlsafe(6)
+    /// Uses OsRng (OS-provided secure random) for cryptographic security
+    /// 12 characters = ~71 bits of entropy (62^12 possibilities)
     fn generate_game_id() -> String {
-        rand::thread_rng()
+        use rand::rngs::OsRng;
+
+        OsRng
             .sample_iter(&Alphanumeric)
-            .take(8)
+            .take(12)
             .map(char::from)
             .collect()
     }
@@ -212,6 +215,24 @@ mod tests {
         assert_ne!(game_id1, game_id2);
         assert_ne!(game_id2, game_id3);
         assert_ne!(game_id1, game_id3);
+    }
+
+    #[test]
+    fn test_game_id_format() {
+        let mut manager = GameManager::new();
+
+        let game_id = manager.create_game();
+
+        // Game ID should be exactly 12 characters
+        assert_eq!(game_id.len(), 12);
+
+        // Game ID should only contain alphanumeric characters
+        assert!(game_id.chars().all(|c| c.is_alphanumeric()));
+
+        // Verify it's URL-safe (no special characters)
+        assert!(!game_id.contains('/'));
+        assert!(!game_id.contains('+'));
+        assert!(!game_id.contains('='));
     }
 
     #[test]
