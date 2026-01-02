@@ -55,6 +55,8 @@ pub struct GameSession {
     pub voting_timer_seconds: Option<u32>,
     /// When voting started (for time calculation)
     pub voting_started_at: Option<OffsetDateTime>,
+    /// ID of the rematch game created when this game finishes
+    pub rematch_game_id: Option<String>,
 }
 
 impl GameSession {
@@ -84,6 +86,7 @@ impl GameSession {
             player_order: Vec::new(),
             voting_timer_seconds: None,
             voting_started_at: None,
+            rematch_game_id: None,
         }
     }
 

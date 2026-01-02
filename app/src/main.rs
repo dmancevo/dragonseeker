@@ -123,6 +123,7 @@ async fn main() {
         .route("/api/games/create", post(game::create_game))
         .route("/game/:game_id/join", get(game::show_join_page))
         .route("/api/games/:game_id/join", post(game::join_game))
+        .route("/api/games/:game_id/play-again", post(game::play_again))
         // Lobby
         .route("/game/:game_id/lobby", get(lobby::show_lobby))
         .route("/api/games/:game_id/start", post(lobby::start_game))

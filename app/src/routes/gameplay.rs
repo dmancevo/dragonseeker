@@ -445,6 +445,48 @@ pub async fn submit_vote(
             tracing::info!("→ Continuing to Playing state");
         }
 
+        // Store game state before potentially dropping the borrow
+        let game_state_before_rematch = game.state.clone();
+
+        // Create rematch game if game is finished
+        if game_state_before_rematch == GameState::Finished {
+            // Drop game borrow to create rematch
+            let _ = game;
+
+            let rematch_game_id = manager.create_game();
+
+            // Get game again to set rematch_game_id
+            let game = manager
+                .get_game_mut(&game_id)
+                .ok_or((StatusCode::NOT_FOUND, "Game not found".to_string()))?;
+            game.rematch_game_id = Some(rematch_game_id.clone());
+            tracing::info!("→ Rematch game created: {}", rematch_game_id);
+
+            // Broadcast update trigger to all connected players
+            let broadcast_msg = serde_json::json!({
+                "type": "update_trigger",
+                "event": "voting_complete"
+            });
+            if let Ok(msg_text) = serde_json::to_string(&broadcast_msg) {
+                let send_result = game.broadcast_tx.send(msg_text);
+                tracing::info!(
+                    "Broadcast voting_complete: receivers={}, state={:?}",
+                    send_result.unwrap_or(0),
+                    game.state
+                );
+            }
+
+            return Ok((
+                headers,
+                Json(serde_json::json!({
+                    "status": "vote_complete",
+                    "result": result,
+                    "winner": winner,
+                    "game_state": format!("{:?}", game.state)
+                })),
+            ));
+        }
+
         // Broadcast update trigger to all connected players
         let broadcast_msg = serde_json::json!({
             "type": "update_trigger",
@@ -566,6 +608,20 @@ pub async fn guess_word(
     game.dragon_guess = Some(guess.clone());
 
     transition_to_finished(game, winner.to_string());
+    tracing::info!("→ Game finished after dragon guess, winner: {}", winner);
+
+    // Create rematch game
+    // Drop game borrow to create rematch
+    let _ = game;
+
+    let rematch_game_id = manager.create_game();
+
+    // Get game again to set rematch_game_id
+    let game = manager
+        .get_game_mut(&game_id)
+        .ok_or((StatusCode::NOT_FOUND, "Game not found".to_string()))?;
+    game.rematch_game_id = Some(rematch_game_id.clone());
+    tracing::info!("→ Rematch game created: {}", rematch_game_id);
 
     // Broadcast update trigger for game finished
     let broadcast_msg = serde_json::json!({
@@ -603,6 +659,8 @@ pub struct ResultsTemplate {
     pub knight_word: Option<String>,
     pub dragon_guess: Option<String>,
     pub players: Vec<crate::core::player::Player>,
+    pub game_id: String,
+    pub player_id: String,
 }
 
 /// Show the game results page
@@ -647,6 +705,8 @@ pub async fn show_results(
         knight_word: game.knight_word.clone(),
         dragon_guess: game.dragon_guess.clone(),
         players,
+        game_id: game_id.clone(),
+        player_id: query.player_id.clone(),
     };
 
     Ok(template.into_response())
